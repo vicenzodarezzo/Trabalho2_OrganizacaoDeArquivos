@@ -17,8 +17,13 @@ O conceito de páginas de disco será lógicamente aplicado. E, sobre a luz da d
 
 ## Links para estudos
 [Introdução à árvore B - geeks4geeks](https://www.geeksforgeeks.org/introduction-of-b-tree-2/)
+
 [Inserção árvore B - geeks4geeks](https://www.geeksforgeeks.org/insert-operation-in-b-tree/)
+
 [B* em c++ - tutorialsPoint](https://www.tutorialspoint.com/b-trees-implementation-in-cplusplus) - achei a fonte meio duvidosa aqui
+
 [Git sobre B* - ta na net](https://github.com/eapacheco/bstar-tree)
+
 [Git sobre B - peguei do bucke](https://github.com/falcaopetri/B-Tree)
+
 [B* - geeks4geeks](https://www.geeksforgeeks.org/b-trees-implementation-in-c/)

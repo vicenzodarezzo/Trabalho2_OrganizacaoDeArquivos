@@ -14,3 +14,11 @@ Para atingir tal marca, o programa utilizará a estrtura de dados complexa Árvo
 Sobre tal escopo, as árvores contarão com ordem 5, isto é, um nó-página cheio terá 5 chaves descendentes. Lembrando que a árvore b* garante ocupação mínima de 86%
 ### Paginação
 O conceito de páginas de disco será lógicamente aplicado. E, sobre a luz da disciplina, o número escolhido para o tamanho dessa unidade de memória secundária será de 76 bytes.
+
+## Links para estudos
+[Introdução à árvore B - geeks4geeks](https://www.geeksforgeeks.org/introduction-of-b-tree-2/)
+[Inserção árvore B - geeks4geeks](https://www.geeksforgeeks.org/insert-operation-in-b-tree/)
+[B* em c++ - tutorialsPoint](https://www.tutorialspoint.com/b-trees-implementation-in-cplusplus) - achei a fonte meio duvidosa aqui
+[Git sobre B* - ta na net](https://github.com/eapacheco/bstar-tree)
+[Git sobre B - peguei do bucke](https://github.com/falcaopetri/B-Tree)
+[B* - geeks4geeks](https://www.geeksforgeeks.org/b-trees-implementation-in-c/)

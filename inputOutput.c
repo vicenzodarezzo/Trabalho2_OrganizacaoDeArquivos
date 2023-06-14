@@ -1,10 +1,10 @@
-/* Vicenzo D'Arezzo Zilio - 13671790 */
-/* INFORMACOES JOAO */
+/* Vicenzo D'Arezzo Zilio (80%) funções 3, 4, 5, 6 - 13671790 */
+/* Marina Souza Figueiredo (20%) funções 7 - 13671827 */
 /* Files Organization - 2023 */
 
 
-#include "inputOutput.h"
-#include "index.h"
+# include "inputOutput.h"
+
 
 // -------------------------------------------------------------------------
 // -------------------------------------------------------------------------
@@ -250,9 +250,7 @@ unsigned long int crime_reading(FILE * read_file, Crime_t * crime){
 
 //-----------------------------------------------------------------------------------
 
-
-Crime_t * input_information_reading_for_searches(char * index_field_info, bool * index_search, int
-    index_id, int * searched_fields, int n_fields, Crime_t * crime_reading_pointer){
+Crime_t * input_information_reading_for_searches(bool * index_search, int * searched_fields, int n_fields, Crime_t * crime_reading_pointer){
     
     char name_field_buffer[BUFSIZ];
     char info_field_buffer[BUFSIZ];
@@ -268,18 +266,16 @@ Crime_t * input_information_reading_for_searches(char * index_field_info, bool *
         }else{
             scan_quote_string(info_field_buffer);
         }
-        
         crime_field_association(info_field_buffer, searched_fields[i], crime_reading_pointer);
         
         //analyzing if the case uses the index:
-        if(searched_fields[i] == index_id){
-            *index_search = true;
-            strcpy(index_field_info, info_field_buffer);
-        }
+        *index_search = (searched_fields[i] == INDEX_IDENTIFIER);
     }
     
     return crime_reading_pointer;
 }
+
+//-----------------------------------------------------------------------------------
 
 Crime_t * Crime_insertion_input_reading(int id_index, bool * index_flag, char * index_info){
     
@@ -386,13 +382,7 @@ void linear_selection(FILE * data_file, CallBackF * executable){
     
     Crime_t * crime_reading_pointer = crime_create();
     
-    if(header->status == '0'){
-        printf("Falha no processamento do arquivo.\n");
-        header_delete(&header);
-        crime_delete(&crime_reading_pointer);
-        return;
-    }if (header->nRegFile == 0){
-        printf("Registro inexistente.\n");
+    if(header->nRegFile == 0){
         header_delete(&header);
         crime_delete(&crime_reading_pointer);
         return;
@@ -409,29 +399,16 @@ void linear_selection(FILE * data_file, CallBackF * executable){
         current_byteOffset += crime_reading(data_file, crime_reading_pointer);
         
         if(crime_reading_pointer->removed != '1'){
-            
+        
             if(executable->comparing_flag == false){
                 // unconditional printing
                 executable->print(crime_reading_pointer);
-            }else if(executable->comparing_flag && executable->deletion_flag){
                 
-                if(executable->compare(crime_reading_pointer, executable->filter, executable->field_list, executable->n_fields) == 0){
-            
-                    // doing the logical deletion
-                    executable->logical_deletion(last_byteOffset, data_file, crime_reading_pointer);
-                    executable->results_flag = true;
-                    
-                    // atualizing the deleted adress vector
-                    executable->deleted_data_adress =  (unsigned long int *) realloc(executable->deleted_data_adress, sizeof(unsigned long int) * (executable->general_counter + 1));
-                    assert(executable->deleted_data_adress);
-                    executable->deleted_data_adress[executable->general_counter] = last_byteOffset;
-                    executable->general_counter++;
-                }
-            }else{
-                if(executable->compare(crime_reading_pointer, executable->filter, executable->field_list, executable->n_fields) == 0){
-                    executable->print(crime_reading_pointer);
-                    executable->results_flag = true;
-                }
+            }else if(executable->compare(crime_reading_pointer, executable->filter, executable->field_list,
+                executable->n_fields) == 0)
+            {
+                executable->print(crime_reading_pointer);
+                executable->results_flag = true;
             }
         }
     }
@@ -450,3 +427,38 @@ void crime_logical_deletion(unsigned long int byteOffset, FILE * data_file, Crim
     crime_bin_write(data_file, crime);
 }
 
+//-----------------------------------------------------------------------------------
+
+unsigned long int byteOffset_point_access(unsigned long int byteOffset, FILE * data_file, CallBackF * executable){
+    
+    unsigned long int returned_counter;
+    Crime_t * crime_reading_pointer = crime_create();
+    
+    fseek(data_file, byteOffset, SEEK_SET);
+    returned_counter = crime_reading(data_file, crime_reading_pointer);
+    
+    if(crime_reading_pointer->removed != '1'){
+
+        if(executable->comparing_flag == false){
+            // unconditional printing
+            executable->print(crime_reading_pointer);
+            executable->results_flag = true;
+            
+        }else if(executable->compare(crime_reading_pointer, executable->filter, executable->field_list,
+            executable->n_fields) == 0)
+        {
+            executable->print(crime_reading_pointer);
+            executable->results_flag = true;
+        }
+        
+    }else{
+    
+        (*executable).results_flag = false;
+    }
+    
+    crime_liberate_dynamic_strings(&crime_reading_pointer);
+        
+    crime_delete(&crime_reading_pointer);
+        
+    return returned_counter + byteOffset;
+}

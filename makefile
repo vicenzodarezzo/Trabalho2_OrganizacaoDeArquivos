@@ -1,11 +1,11 @@
-all: index.o registers.o inputOutput.o programaTrab.o csvFunctions.o
-	gcc index.o inputOutput.o csvFunctions.o registers.o programaTrab.o -o programaTrab -std=c99 -Wall
+all: bTree_index.o registers.o inputOutput.o main.o csv_functions.o
+	gcc bTree_index.o inputOutput.o csv_functions.o registers.o main.o -o main -std=c99 -Wall
 
 csvFunctions.o:
-	gcc -c csvFunctions.c -o csvFunctions.o
+	gcc -c csv_functions.c -o csv_functions.o
 	
-index.o:
-	gcc -c index.c -o index.o
+bTree_index.o:
+	gcc -c bTree_index.c -o bTree_index.o
 	
 registers.o:
 	gcc -c registers.c -o registers.o
@@ -13,11 +13,11 @@ registers.o:
 inputOutput.o:
 	gcc -c inputOutput.c -o inputOutput.o
 
-programaTrab.o:
-	gcc -c programaTrab.c -o programaTrab.o
+main.o:
+	gcc -c main.c -o main.o
 
 make run:
-	./programaTrab
+	./main
 
 clean:
-	rm *.o programaTrab
+	rm *.o main

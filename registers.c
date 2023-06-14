@@ -1,5 +1,5 @@
-/* Vicenzo D'Arezzo Zilio - 13671790 */
-/* INFORMACOES JOAO */
+/* Vicenzo D'Arezzo Zilio (80%) funções 3, 4, 5, 6 - 13671790 */
+/* Marina Souza Figueiredo (20%) funções 7 - 13671827 */
 /* Files Organization - 2023 */
 
 
@@ -193,3 +193,4 @@ void crime_list_delete(Crime_t *** pointer, int length){
     free(p);
     p = NULL;
 }
+

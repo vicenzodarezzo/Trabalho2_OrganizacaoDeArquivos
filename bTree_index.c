@@ -3,10 +3,7 @@
 /* Files Organization - 2023 */
 
 #include "bTree_index.h"
-#include "page_buffer.h"
-
-
-
+#include "inputOutput.h"
 
 // -----------------------------------
 // -----------------------------------
@@ -19,16 +16,13 @@ typedef enum path_running{
     RIGHT, // signifys that the searching path should follow the right pointer;
 } Path_running;
 
-typedef enum search_purpose{
-    INSERTION, // will determinate the return of the RRN value for insertion;
-    ACCESSING, // will determinate the return of the byteOffset for the acessing;
-}Search_purpose;
 
 typedef struct search_return{
     Path_running path; // used in the key binary search for the branching in the B-tree
     int last_key_id; // used in the key binary search for the branching in the B-tree
-    int returned_keyID;
-    unsigned long int returned_byteOffset;
+    int return_bSearch;
+    int last_RRN_accessed;
+    BT_key key;
 } Search_return;
 
 
@@ -84,9 +78,6 @@ BTree * b_tree_create(void){
     BTree * tree = (BTree * ) malloc(sizeof(BTree));
     assert(tree);
     
-    tree->header = bt_header_create();
-    tree->root = bt_node_create();
-    
     return tree;
 }
 
@@ -97,7 +88,46 @@ void b_tree_delete(BTree ** tree){
     *tree = NULL;
 }
 
+int index_crimeField_pairing(char str[]){
+    int returned_value;
+    if(!strcmp(str, "idCrime")){
+        returned_value = 0;
+    }else if(!strcmp(str, "dataCrime")){
+        returned_value = 1;
+    }else if(!strcmp(str, "numeroArtigo")){
+        returned_value = 2;
+    }else if(!strcmp(str, "lugarCrime")){
+        returned_value = 3;
+    }else if(!strcmp(str, "descricaoCrime")){
+        returned_value = 4;
+    }else if(!strcmp(str, "marcaCelular")){
+        returned_value = 5;
+    }else{
+        printf("Error pairing input string with a field");
+        exit(1) ;
+    }
+    return returned_value;
+}
 
+void bTree_closing(BTree ** tree){
+    
+    BTree * t = *tree;
+    
+    // now that the using of the btree in main memory is ended,
+    // we have to indicate that the index file in second memory
+    // is again valid;
+    
+    t->header->status = '1';
+    fseek(t->index_file, 0, SEEK_SET);
+    bt_header_write(t->header, t->index_file);
+    
+    bt_node_delete(&(t->root));
+    bt_header_delete(&(t->header));
+    
+    free(t);
+    t = NULL;
+    
+}
 
 // -----------------------------------
 // -----------------------------------
@@ -117,16 +147,12 @@ BT_header_t * bt_header_read(FILE * src){
     counter += sizeof(int) * fread(&h->height, sizeof(int), 1, src);
     counter += sizeof(int) * fread(&h->n_indexed_keys, sizeof(int), 1, src);
     
-    printf("HEADER READ : Valor lido : %d\n", counter);
-    
-    fseek(src, DISK_PAGE_SIZE - counter, SEEK_CUR);
-    
     return h;
 }
 
 BT_node_t * bt_node_read(FILE * src, int value_RRN){
     
-    fseek(src, value_RRN * DISK_PAGE_SIZE, SEEK_SET);
+    fseek(src, (value_RRN + 1)* DISK_PAGE_SIZE, SEEK_SET);
     
     int counter = 0;
     
@@ -143,11 +169,51 @@ BT_node_t * bt_node_read(FILE * src, int value_RRN){
     
     counter += sizeof(int) * fread(&n->descendants_RRN[TREE_ORDER - 1], sizeof(int), 1, src);
     
-    printf("NODE READ : Valor lido : %d\n", counter);
-    
-    fseek(src, DISK_PAGE_SIZE - counter, SEEK_CUR);
     
     return n;
+}
+
+BTree * bTree_initializing(FILE * index_file){
+    
+    // while the tree is manipulated in main memory, we have to
+    // indicate the inconsistency of the information in stored
+    // second memory at the file.
+    
+    BTree * tree = b_tree_create();
+    tree->header = bt_header_read(index_file);
+    
+    if(tree->header->status == '0'){
+        fprintf(stdout, "Falha no processamento do arquivo.\n");
+        exit(0);
+    }
+    
+    tree->header->status = '0';
+    fseek(index_file, 0, SEEK_SET);
+    bt_header_write(tree->header, index_file);
+    
+    tree->root = bt_node_read(index_file, tree->header->root_RRN);
+    tree->index_file = index_file;
+    
+    return tree;
+}
+
+void print_no(BT_node_t * no){
+    printf("NO:\n");
+    
+    printf("RATE: %d\n", no->occupancy_rate);
+    printf("\tCHAVES:\n");
+    for(int i = 0; i < 4; i++){
+        printf("\t\t %d ", no->keys[i].value);
+    }
+    printf("\n\tBOS:\n");
+    for(int i = 0; i < 4; i++){
+        printf("\t\t %lu ", no->keys[i].byteOffset);
+    }
+    printf("\n\tRRNS:\n");
+    for(int i = 0; i < 5; i++){
+        printf("\t\t %d ", no->descendants_RRN[i]);
+    }
+    printf("\n");
 }
 
 // -----------------------------------
@@ -166,9 +232,10 @@ void bt_header_write(BT_header_t * h, FILE * src){
     counter += sizeof(int) * fwrite(&h->height, sizeof(int), 1, src);
     counter += sizeof(int) * fwrite(&h->n_indexed_keys, sizeof(int), 1, src);
     
-    printf("HEADER WRITE : Valor escrito : %d\n", counter);
     char c = TRASH_IDENTIFIER ;
-    fwrite(&c, sizeof(char), DISK_PAGE_SIZE - counter, src);
+    
+    for(int i = DISK_PAGE_SIZE - counter; i > 0; i--) fwrite(&c, sizeof(char), 1, src);
+    
 }
 
 // -----------------------------------
@@ -182,6 +249,7 @@ void bt_header_write(BT_header_t * h, FILE * src){
 of the list where the filter value is contained, if it is. In the other case, returns NILL.
 The information stored in the last_id and path will be used in the heuristic for propagate
 the search over the tree. */
+
 int key_binary_search(BT_key * list, int inicial_id, int final_id, int filter_value, int * last_id, Path_running * path){
 
     // the condition of the recursion :
@@ -206,86 +274,66 @@ int key_binary_search(BT_key * list, int inicial_id, int final_id, int filter_va
             *path = LEFT;
             return key_binary_search(list, inicial_id, mid_id - 1, filter_value, last_id, path);
         }
+    }else{
+        // Stop condition is validated
+        return -1;
     }
-    
-    // Stop condition is validated
-    
-    return -1;
-    
+   
 }
 
-//
-//
-//Search_return bTree_search_recursion(BT_node_t * node, int filter_value, Page_buffer * buffer)
-//{
-//    
-//    Search_return info;
-//    
-//    info.returned_keyID = key_binary_search(node->keys, 0, TREE_ORDER - 2, filter_value, &info.last_key_id, &info.path);
-//    
-//    // The value searched is in the node_returned position of the key list;
-//    if(info.returned_keyID != -1){
-//        info.returned_byteOffset = node->keys[info.returned_keyID].byteOffset;
-//        return info;
-//    }
-//    
-//    // The value isn't in the current node, so :
-//    
-//    // -> if the node is a leaf, the value isn't in the tree
-//    if(node->level == 1){
-//        return info;
-//    }
-//    
-//    // -> the node isn't a leaf, so, we have to read another page and search the value there
-//    int next_RRN_id;
-//    int next_RRN;
-//    next_RRN_id = (info.path == LEFT) ? info.last_key_id : info.last_key_id + 1 ;
-//    next_RRN = node->descendants_RRN[next_RRN_id];
-//    
-//    // ----> if the node isn't a leaf but the searched path is empty, the node ins't in the tree
-//    //       and the last visited node is the current one;
-//    if(next_RRN == -1){
-//        return info;
-//    }
-//    // ----> if the node isn't a leaf but the searched path isn't empty, the search has
-//    //       to branch through the calculated next RRN ;
-//    else{
-//        // atualize de buffer;
-////        return bTree_search_recursion(buffer->list[buffer->counter++], filter_value, buffer);
-//    }
-//}
-//
-//
-//unsigned long int bTree_search(BTree * tree, int filter_value, Search_purpose purpose){
-//    
-//    // creating a node buffer to store the read nodes in the main memory;
-//    Page_buffer buffer;
-//    buffer.counter = 1;
-//    // passing the root to the buffer;
-//    buffer.list[0] = tree->root;
-//    
-//    Search_return search_info;
-//    
-//    search_info = bTree_search_recursion(buffer.list[0], filter_value, &buffer);
-//    
-//    /*
-//     
-//       LEAF ROOT : if the tree is empty or the root is a leaf, the above function won't be able
-//       to determine the last node RRN because the recursion will stop in the first step.
-//       We know that this information is required for the insertion, so, this value will
-//       be manually added to the returned registry if the case requires it.
-//     
-//     */
-//    
-//    
-//    if(purpose == INSERTION){
-//        // vai ser o último nó inserido no buffer;
-//        return search_info.last_node_RRN;
-//    }else{
-//        // apagar todo o buffer
-//        return search_info.returned_byteOffset
-//    }
-//  
-//}
+
+
+Search_return bTree_search_recursion(FILE * index_file, BT_node_t * node, int filter_value)
+{
+    Search_return info;
+    
+    info.return_bSearch = key_binary_search(node->keys, 0, node->occupancy_rate - 1, filter_value, &info.last_key_id, &info.path);
+    
+    if(info.return_bSearch != -1){
+        
+        // The value searched is in the node_returned position of the key list;
+        info.key = node->keys[info.return_bSearch];
+        
+    }else{
+        
+        // ----> if path isn't empty, the search has
+        //       to branch through the calculated next RRN ;
+        int next_RRN_id;
+        int next_RRN;
+        next_RRN_id = (info.path == LEFT) ? info.last_key_id : info.last_key_id + 1 ;
+        next_RRN = node->descendants_RRN[next_RRN_id];
+        info.last_RRN_accessed = next_RRN;
+        
+        if(next_RRN != -1){
+            
+            // access in main memory to a new node in the next tree level ;
+            BT_node_t * next_node = bt_node_read(index_file, next_RRN);
+            info = bTree_search_recursion(index_file, next_node, filter_value);
+            
+            // deletion of the obsolete node int the recursion tail ;
+            bt_node_delete(&next_node);
+        }
+    }
+    
+    return info;
+}
+
+long long int bTree_id_search(BTree * tree, int filter_value, Search_purpose purpose){
+    
+    Search_return information;
+    information.last_RRN_accessed = tree->header->root_RRN;
+    
+    information = bTree_search_recursion(tree->index_file, tree->root, filter_value);
+    
+    if(purpose == ACCESSING){
+        if(information.return_bSearch != -1) return information.key.byteOffset;
+        else return -1;
+    }
+    else{
+        // purpose == INSERTION
+        return information.last_RRN_accessed;
+    }
+}
+
 
 

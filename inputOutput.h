@@ -1,5 +1,5 @@
-/* Vicenzo D'Arezzo Zilio - 13671790 */
-/* INFORMACOES JOAO */
+/* Vicenzo D'Arezzo Zilio (80%) funções 3, 4, 5, 6 - 13671790 */
+/* Marina Souza Figueiredo (20%) funções 7 - 13671827 */
 /* Files Organization - 2023 */
 
 #ifndef inputOutput_h
@@ -9,7 +9,7 @@
 # include <ctype.h>
 
 # include "registers.h"
-
+# include "bTree_index.h"
 
 //TYPEDEFS:
 
@@ -32,13 +32,13 @@ typedef struct callBackFunctions{
     
 }CallBackF;
 
-//GIVEN FUNCTIONS: -----------------------------------------------------
+//GIVEN FUNCTIONS: --------------------------------------------------------------------------------
 
 void binarioNaTela(char *nomeArquivoBinario);
 
-void scan_quote_string(char *str) ;
+void scan_quote_string(char *str);
 
-// WRITING FUNCTIOS : -----------------------------------------------------
+// WRITING FUNCTIOS : --------------------------------------------------------------------------------
 
 /** Writes the information from a crime register into a binary file. It returns represents the number of bytes that was written in the file.
  *  You can use it for incrementing the byteOffset of the File. An good observation to do is that this function substitutes de '\0' in the writing
@@ -51,7 +51,7 @@ unsigned long int crime_bin_write(FILE * binFile, Crime_t * crime);
  */
 unsigned long int header_bin_write(FILE * binFile, Header_t * header);
 
-// READING FUNCTIONS: ----------------------------------------------------
+// READING FUNCTIONS: --------------------------------------------------------------------------------
 
 unsigned long int header_reading(FILE * read_file, Header_t * h);
 
@@ -59,11 +59,11 @@ unsigned long int crime_reading(FILE * read_file, Crime_t * crime);
 
 /**
  * Function that structures the read of informaiton of the standard input file in the swage of the searching funtion (same for deletion)
- * it stores the corresponding information fields, in the previous code used in this project, in the searched_fields vector and the crime\
+ * it stores the corresponding information fields, in the previous code used in this project, in the searched_fields vector and the crime
  * regitry passed as a parameter.
  */
-Crime_t * input_information_reading_for_searches(char * index_field_info, bool * index_search, int
-    index_id, int * searched_fields, int n_fields, Crime_t * crime_reading_pointer);
+Crime_t * input_information_reading_for_searches(bool * index_search, int * searched_fields,
+    int n_fields, Crime_t * crime_reading_pointer);
 
 /**
  * Function that structures the read of informaiton of the standard input file in the swage of the insertion funtion
@@ -77,7 +77,7 @@ Crime_t * Crime_insertion_input_reading(int id_index, bool * index_flag, char * 
 
 
 
-// SELECTING FUNCTIONS : searching and deletion -------------------------------------------------
+// SELECTING FUNCTIONS : searching and deletion ---------------------------------------------------------------------
 
 /**
  * This is the funciton resposable to run linearly the data file. For it, uses a byteoffset counter and a crime buffer to do a cycle of
@@ -97,6 +97,10 @@ void crime_printing(Crime_t * crime);
  */
 void crime_logical_deletion(unsigned long int byteOffset, FILE * data_file, Crime_t * crime);
 
-
+/**
+ * Acess punctually the indicated register in the data_file, doing a executable task according to the
+ * CallBack registry passed as a parameter.
+ */
+unsigned long int byteOffset_point_access(unsigned long int byteOffset, FILE * data_file, CallBackF * executable);
 
 #endif /*inputOutput*/

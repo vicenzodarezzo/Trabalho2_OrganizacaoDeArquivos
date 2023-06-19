@@ -29,7 +29,7 @@ typedef enum list_type{
 typedef struct overflow_lists{
     BT_key * key_list;
     int * rrn_list;
-    int ascended_id;
+    int ascended_id[2];
     int inserted_id;
     int list_len;
 }Overflow_block;
@@ -603,7 +603,7 @@ Overflow_block * create_oveflowBlock_3Nodes(BT_key father_key, BT_node_t * inser
     info_block->key_list[info_block->inserted_id] = block.key;
     info_block->rrn_list[info_block->inserted_id+1] = block.right_RRN;
     // calculating the mid_value of the list
-    info_block->ascended_id = info_block->list_len / 2 ;
+    info_block->ascended_id[0] = info_block->list_len / 2 ;
     
     return info_block;
 }
@@ -630,7 +630,7 @@ void key_redistribuition(BT_node_t * father_node, BT_node_t * insertion_node,
     // ATUALIZING THE NODES
     
     // switching the father key with the ascended one in the key list;
-    father_node->keys[id_father_key] = info_block->key_list[info_block->ascended_id];
+    father_node->keys[id_father_key] = info_block->key_list[info_block->ascended_id[0]];
    
     insertion_node->occupancy_rate = 0;
     sister_node->occupancy_rate = 0;
@@ -643,7 +643,7 @@ void key_redistribuition(BT_node_t * father_node, BT_node_t * insertion_node,
         
         while(atualization_counter < TREE_ORDER-1){
                       
-            if(atualization_counter < info_block->ascended_id){
+            if(atualization_counter < info_block->ascended_id[0]){
                 insertion_node->keys[atualization_counter] =
                 info_block->key_list[atualization_counter];
                 
@@ -701,7 +701,7 @@ void key_redistribuition(BT_node_t * father_node, BT_node_t * insertion_node,
         
         while(atualization_counter < TREE_ORDER-1){
                       
-            if(atualization_counter < info_block->ascended_id){
+            if(atualization_counter < info_block->ascended_id[0]){
                 sister_node->keys[atualization_counter] =
                 info_block->key_list[atualization_counter];
                 
@@ -811,7 +811,7 @@ Overflow_block * create_oveflowBlock_1Node(BT_node_t * insertion_node, Insertion
     info_block->key_list[info_block->inserted_id] = block.key;
     info_block->rrn_list[info_block->inserted_id+1] = block.right_RRN;
     // calculating the mid_value of the list
-    info_block->ascended_id = info_block->list_len / 2 ;
+    info_block->ascended_id[0] = info_block->list_len / 2 ;
     
     return info_block;
 }

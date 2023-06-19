@@ -101,4 +101,4 @@ void crime_logical_deletion(long long int byteOffset, FILE * data_file, Crime_t 
  */
 long long int byteOffset_point_access(long long int byteOffset, FILE * data_file, CallBackF * executable);
 
-#endif /*inputOutput*/
+#endif /* inputOutput */

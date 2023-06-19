@@ -499,14 +499,14 @@ Overflow_block * create_oveflowBlock_3Nodes(BT_key father_key, BT_node_t * inser
     int last_accessed_id;
     int b_search_return;
     
+    info_block->list_len = 2 + insertion_node->occupancy_rate + sister_node->occupancy_rate;
+
     // building the list
     info_block = (Overflow_block *) malloc(sizeof(Overflow_block));
     assert(info_block);
     info_block->key_list = (BT_key *) malloc(sizeof(BT_key) * info_block->list_len);
     assert(info_block->key_list);
     info_block->rrn_list = (int *) malloc(sizeof(int) * (info_block->list_len+1));
-    
-    info_block->list_len = 2 + insertion_node->occupancy_rate + sister_node->occupancy_rate;
 
     if(sister_direction == RIGHT){
         // the case where the insertion page is lower than the sister_page ;
@@ -561,6 +561,7 @@ Overflow_block * create_oveflowBlock_3Nodes(BT_key father_key, BT_node_t * inser
             sister_node->descendants_RRN[inserting_rrn_counter];
             
             inserting_key_counter++;
+            inserting_rrn_counter++;
         }
         
         // inserting the last RRN from the first node ;
@@ -580,6 +581,7 @@ Overflow_block * create_oveflowBlock_3Nodes(BT_key father_key, BT_node_t * inser
             insertion_node->descendants_RRN[control_id];
             
             inserting_key_counter++;
+            inserting_rrn_counter++;
         }
         
         // inserting the last RRN from the last node ;
@@ -757,4 +759,59 @@ void key_redistribuition(BT_node_t * father_node, BT_node_t * insertion_node,
     free(info_block);
 }
 
+Overflow_block * create_oveflowBlock_1Node(BT_node_t * insertion_node, Insertion_block block){
+    
+    // for storing
+    Overflow_block * info_block;
+    int inserting_key_counter = 0;
+    int inserting_rrn_counter = 0;
+    // for searching
+    Path_running path;
+    int last_accessed_id;
+    int b_search_return;
 
+    info_block->list_len = 1 + insertion_node->occupancy_rate;
+    
+    // building the list
+    info_block = (Overflow_block *) malloc(sizeof(Overflow_block));
+    assert(info_block);
+    info_block->key_list = (BT_key *) malloc(sizeof(BT_key) * info_block->list_len);
+    assert(info_block->key_list);
+    info_block->rrn_list = (int *) malloc(sizeof(int) * (info_block->list_len+1));
+
+        
+    // inserting the node keys and rrn values into the overflow_block key and rrn vectors ;
+    while(inserting_key_counter < insertion_node->occupancy_rate){
+        
+        info_block->key_list[inserting_key_counter] =
+        insertion_node->keys[inserting_key_counter];
+        
+        info_block->rrn_list[inserting_rrn_counter] =
+        insertion_node->descendants_RRN[inserting_rrn_counter];
+        
+        inserting_key_counter++;
+        inserting_rrn_counter++;
+    }
+    
+    // inserting the last RRN from the node ;
+    info_block->rrn_list[inserting_rrn_counter] =
+    insertion_node->descendants_RRN[inserting_rrn_counter];
+    inserting_rrn_counter++;
+    
+    // searching the insertion position in the key_list
+    b_search_return = key_binary_search(info_block->key_list, 0, info_block->list_len - 1,
+                            block.key.value, &last_accessed_id, &path);
+
+    // the last_accessed_id + path represents where the key will be placed
+    info_block->inserted_id = (path == LEFT) ? last_accessed_id : last_accessed_id + 1;
+
+    node_list_shift(info_block->key_list, info_block->inserted_id, info_block->list_len - 1, KEY);
+    node_list_shift(info_block->rrn_list, info_block->inserted_id, info_block->list_len - 1, RRN);
+    
+    info_block->key_list[info_block->inserted_id] = block.key;
+    info_block->rrn_list[info_block->inserted_id+1] = block.right_RRN;
+    // calculating the mid_value of the list
+    info_block->ascended_id = info_block->list_len / 2 ;
+    
+    return info_block;
+}

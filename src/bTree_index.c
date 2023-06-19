@@ -499,11 +499,14 @@ Overflow_block * create_oveflowBlock_3Nodes(BT_key father_key, BT_node_t * inser
     int last_accessed_id;
     int b_search_return;
     
-    info_block->list_len = 2 + insertion_node->occupancy_rate + sister_node->occupancy_rate;
+    
 
     // building the list
     info_block = (Overflow_block *) malloc(sizeof(Overflow_block));
     assert(info_block);
+    
+    info_block->list_len = 2 + insertion_node->occupancy_rate + sister_node->occupancy_rate;
+    
     info_block->key_list = (BT_key *) malloc(sizeof(BT_key) * info_block->list_len);
     assert(info_block->key_list);
     info_block->rrn_list = (int *) malloc(sizeof(int) * (info_block->list_len+1));
@@ -770,11 +773,11 @@ Overflow_block * create_oveflowBlock_1Node(BT_node_t * insertion_node, Insertion
     int last_accessed_id;
     int b_search_return;
 
-    info_block->list_len = 1 + insertion_node->occupancy_rate;
     
     // building the list
     info_block = (Overflow_block *) malloc(sizeof(Overflow_block));
     assert(info_block);
+    info_block->list_len = 1 + insertion_node->occupancy_rate;
     info_block->key_list = (BT_key *) malloc(sizeof(BT_key) * info_block->list_len);
     assert(info_block->key_list);
     info_block->rrn_list = (int *) malloc(sizeof(int) * (info_block->list_len+1));

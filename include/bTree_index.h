@@ -58,12 +58,17 @@ typedef struct tree{
     BT_header_t * header;
     BT_node_t * root;
     FILE * index_file;
-} BTree;
+}BTree;
 
 typedef union branching_value{
     int next_RRN;
     BT_key finded_key;
 }Branching_value;
+
+typedef enum path_running{
+    LEFT, // signifys that the searching path should follow the left pointer;
+    RIGHT, // signifys that the searching path should follow the right pointer;
+}Path_running;
 
 // -----------------------------------
 // -----------------------------------
@@ -132,6 +137,6 @@ void print_no(BT_node_t * no);
 
 long long int bTree_id_search(FILE * index_file, BT_node_t * node, int filter_value);
 
-
+int key_binary_search(BT_key * list, int inicial_id, int final_id, int filter_value, int * last_id, Path_running * path);
 
 #endif /* bTree_index_h */

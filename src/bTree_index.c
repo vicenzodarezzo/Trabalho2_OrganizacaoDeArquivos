@@ -4,35 +4,7 @@
 
 #include "../include/bTree_index.h"
 #include "../include/inputOutput.h"
-
-// -----------------------------------
-// -----------------------------------
-/* IMPLEMENTATION REGISTRY */
-// -----------------------------------
-// -----------------------------------
-
-typedef enum path_running{
-    LEFT, // signifys that the searching path should follow the left pointer;
-    RIGHT, // signifys that the searching path should follow the right pointer;
-} Path_running;
-
-
-typedef struct inserted_block{
-    BT_key key;
-    int right_RRN;
-}Insertion_block;
-
-typedef enum list_type{
-    KEY, RRN
-}List_type;
-
-typedef struct overflow_lists{
-    BT_key * key_list;
-    int * rrn_list;
-    int ascended_id[2];
-    int inserted_id;
-    int list_len;
-}Overflow_block;
+#include "../include/overflow_management.h"
 
 // -----------------------------------
 // -----------------------------------
@@ -367,27 +339,6 @@ long long int bTree_id_search(FILE * index_file, BT_node_t * node, int filter_va
  *  --> split 2 - 3
  */
 
-// assumes that the list has at least one position available in the end of the array
-void node_list_shift(void * list, int new_key_position, int occupancy_rate, List_type type ){
-    printf("SHIFTANDO UMA LISTA\n");
-    if(type == KEY){
-        printf("TIPO KEY\n");
-        BT_key * key_list = (BT_key *) list;
-        for(int i = occupancy_rate; i > new_key_position; i--){
-            key_list[i] = key_list[i-1];
-        }
-    }else{
-        printf("TIPO INT\n");
-        // in this case, the RRN list has 1 more position than the key list
-        // so, the contion and the position acces of the loop has to be
-        // adapted;
-        int * rrn_list = (int *) list;
-        for (int i = occupancy_rate; i >= new_key_position; i--) {
-            rrn_list[i+2] = rrn_list[i+1];
-        }
-    }
-}
-
 // ASSUMINDO QUE O BLOCO TEM NO MAX FILHO SOMENTE NA DIREITA
 
 
@@ -432,184 +383,6 @@ void key_sorted_insertion(BT_node_t * node, Insertion_block * block, FILE * inde
     printf("no dps:\n");
     print_no(node);
 }
-/*
- RECEBE:
-    O nó pai de onde a inserção parte;
-    O arquivo da árvore
-    O id da pagina onde vai ocorrer a inserção
-    Um endereço do tipo Path_Running onde será armazenada a direção da página escolhida
-        com base na página de inserção
- RETORNA:
-    A posição em memória da página irmã
- */
-BT_node_t * key_redistribuition_decision(BT_node_t * father_node, int overflowed_RRN_id,
-     FILE * index_file, Path_running * direction){
-    
-    BT_node_t * node_buffer_left = NULL;
-    BT_node_t * node_buffer_right = NULL;
-
-    
-    // testing if the insertion position is one of the list limits case :
-    if(overflowed_RRN_id != 0){
-        node_buffer_left = bt_node_read(index_file, overflowed_RRN_id - 1);
-    }else if(overflowed_RRN_id != TREE_ORDER - 1){
-        node_buffer_right = bt_node_read(index_file, overflowed_RRN_id + 1);
-    }
-    
-    // deciding which of the nodes, or none of them, will be targeted by
-    // the redistribuition.
-    if(node_buffer_left != NULL && node_buffer_left->occupancy_rate < TREE_ORDER - 1){
-        
-        if(node_buffer_right != NULL) bt_node_delete(&node_buffer_right);
-        *direction = LEFT;
-        return node_buffer_left;
-        
-    }else if(node_buffer_right != NULL && node_buffer_right->occupancy_rate < TREE_ORDER - 1){
-        
-        if(node_buffer_left != NULL) bt_node_delete(&node_buffer_left);
-        *direction = RIGHT;
-        return node_buffer_right;
-        
-    }else{
-        if(node_buffer_right != NULL) bt_node_delete(&node_buffer_right);
-        if(node_buffer_left != NULL) bt_node_delete(&node_buffer_left);
-        return NULL;
-    }
-}
-
-/*
- RECEBE:
-    Os nós já lidos em memória primária
-    O bloco a ser inserido
-    A informação se a página irmã está à direita ou à esquerda da página atual
- RETORNA
-    A lista com todos os RRNs e outra com todas as Chaves
-    A posição do meio = ascendida
-    O comprimento da lista
- */
-Overflow_block * create_oveflowBlock_3Nodes(BT_key father_key, BT_node_t * insertion_node,
-        BT_node_t * sister_node, Insertion_block block, Path_running sister_direction){
-    
-    // for storing
-    Overflow_block * info_block;
-    int inserting_key_counter = 0;
-    int inserting_rrn_counter = 0;
-    // for searching
-    Path_running path;
-    int last_accessed_id;
-    int b_search_return;
-    
-    
-
-    // building the list
-    info_block = (Overflow_block *) malloc(sizeof(Overflow_block));
-    assert(info_block);
-    
-    info_block->list_len = 2 + insertion_node->occupancy_rate + sister_node->occupancy_rate;
-    
-    info_block->key_list = (BT_key *) malloc(sizeof(BT_key) * info_block->list_len);
-    assert(info_block->key_list);
-    info_block->rrn_list = (int *) malloc(sizeof(int) * (info_block->list_len+1));
-
-    if(sister_direction == RIGHT){
-        // the case where the insertion page is lower than the sister_page ;
-        while(inserting_key_counter < insertion_node->occupancy_rate){
-            
-            info_block->key_list[inserting_key_counter] =
-            insertion_node->keys[inserting_key_counter];
-            
-            info_block->rrn_list[inserting_rrn_counter] =
-            insertion_node->descendants_RRN[inserting_rrn_counter];
-            
-            inserting_key_counter++;
-            inserting_rrn_counter++;
-        }
-        
-        // inserting the last RRN from the first node ;
-        info_block->rrn_list[inserting_rrn_counter] =
-        insertion_node->descendants_RRN[inserting_rrn_counter];
-        inserting_rrn_counter++;
-        
-        // inserting the father key
-        info_block->key_list[inserting_key_counter++] = father_key;
-        
-        
-        while(inserting_key_counter < info_block->list_len - 1){
-            int control_id = inserting_key_counter - (insertion_node->occupancy_rate +1);
-            
-            info_block->key_list[inserting_key_counter] =
-            sister_node->keys[control_id];
-            
-            info_block->rrn_list[inserting_rrn_counter] =
-            sister_node->descendants_RRN[control_id];
-            
-            inserting_key_counter++;
-            inserting_rrn_counter++;
-        }
-        
-        // inserting the last RRN from the last node ;
-        info_block->rrn_list[inserting_rrn_counter] =
-        sister_node->descendants_RRN[inserting_rrn_counter];
-        inserting_rrn_counter++;
-        
-    }else{
-        
-        // the case where the insertion page is higher than the sister_page ;
-        while(inserting_key_counter < sister_node->occupancy_rate){
-            
-            info_block->key_list[inserting_key_counter] =
-            sister_node->keys[inserting_key_counter];
-            
-            info_block->rrn_list[inserting_rrn_counter] =
-            sister_node->descendants_RRN[inserting_rrn_counter];
-            
-            inserting_key_counter++;
-            inserting_rrn_counter++;
-        }
-        
-        // inserting the last RRN from the first node ;
-        info_block->rrn_list[inserting_rrn_counter] =
-        sister_node->descendants_RRN[inserting_rrn_counter];
-        inserting_rrn_counter++;
-        
-        info_block->key_list[inserting_key_counter++] = father_key;
-        
-        while(inserting_key_counter < info_block->list_len - 1){
-            int control_id = inserting_key_counter - (sister_node->occupancy_rate +1);
-            
-            info_block->key_list[inserting_key_counter] =
-            insertion_node->keys[control_id];
-            
-            info_block->rrn_list[inserting_rrn_counter] =
-            insertion_node->descendants_RRN[control_id];
-            
-            inserting_key_counter++;
-            inserting_rrn_counter++;
-        }
-        
-        // inserting the last RRN from the last node ;
-        info_block->rrn_list[inserting_rrn_counter] =
-        insertion_node->descendants_RRN[inserting_rrn_counter];
-        inserting_rrn_counter++;
-    }
-    
-    // searching the insertion position in the key_list
-    b_search_return = key_binary_search(info_block->key_list, 0, info_block->list_len - 1,
-                            block.key.value, &last_accessed_id, &path);
-
-    // the last_accessed_id + path represents where the key will be placed
-    info_block->inserted_id = (path == LEFT) ? last_accessed_id : last_accessed_id + 1;
-
-    node_list_shift(info_block->key_list, info_block->inserted_id, info_block->list_len - 1, KEY);
-    node_list_shift(info_block->rrn_list, info_block->inserted_id, info_block->list_len - 1, RRN);
-    
-    info_block->key_list[info_block->inserted_id] = block.key;
-    info_block->rrn_list[info_block->inserted_id+1] = block.right_RRN;
-    // calculating the mid_value of the list
-    info_block->ascended_id[0] = info_block->list_len / 2 ;
-    
-    return info_block;
-}
 
 /* RECEBE:
     Os nós lidos em memória primária
@@ -618,12 +391,14 @@ Overflow_block * create_oveflowBlock_3Nodes(BT_key father_key, BT_node_t * inser
     A informação sobre a direção da página Irmã
     O id da chave pai dentro do nó pai, obtida na recursão
 */
+
+// JA DESALOCA O SISTER NODE ;
+
 void key_redistribuition(BT_node_t * father_node, BT_node_t * insertion_node,
      BT_node_t * sister_node, int id_father_key, Insertion_block block,
      Path_running sisterPage_direction){
     
     Overflow_block * info_block;
-    int atualization_counter = 0;
     
     // CREATING THE REDISTRIBUITION STRUCTURE : keys and pointers lists
     
@@ -631,6 +406,9 @@ void key_redistribuition(BT_node_t * father_node, BT_node_t * insertion_node,
          insertion_node, sister_node, block, sisterPage_direction);
     
     // ATUALIZING THE NODES
+    
+    // calculating the mid_value of the list
+    info_block->ascended_id[0] = info_block->list_len / 2 ;
     
     // switching the father key with the ascended one in the key list;
     father_node->keys[id_father_key] = info_block->key_list[info_block->ascended_id[0]];
@@ -641,118 +419,20 @@ void key_redistribuition(BT_node_t * father_node, BT_node_t * insertion_node,
     // the case where the insertion page is lower than the sister_page ;
     if(sisterPage_direction == RIGHT){
         
-        // atualizing the insertion page:
-        insertion_node->descendants_RRN[0] = info_block->rrn_list[0];
+        insertion_node = overflow_atualizing_Node(insertion_node, info_block, 0,
+             info_block->ascended_id[0], TREE_ORDER - 1);
         
-        while(atualization_counter < TREE_ORDER-1){
-                      
-            if(atualization_counter < info_block->ascended_id[0]){
-                insertion_node->keys[atualization_counter] =
-                info_block->key_list[atualization_counter];
-                
-                insertion_node->descendants_RRN[atualization_counter + 1] =
-                info_block->rrn_list[atualization_counter + 1];
-                
-                (insertion_node->occupancy_rate)++;
-            }else{
-                insertion_node->keys[atualization_counter].value = -1;
-                insertion_node->keys[atualization_counter].byteOffset = -1;
-                
-                insertion_node->descendants_RRN[atualization_counter + 1] = -1;
-            }
-            
-            atualization_counter++;
-        }
-        
-        atualization_counter++;
-        
-        // atualizing the sister page:
-        
-        sister_node->descendants_RRN[0] = info_block->rrn_list[atualization_counter];
-        
-        while (atualization_counter < 2 * (TREE_ORDER -1) + 1) {
-            
-            // this index control the accessing of the sister page
-            // positions given that the counter above access the
-            // overflow lists;
-            
-            int control_id = atualization_counter - 5;
-            
-            if(atualization_counter < info_block->list_len){
-                sister_node->keys[control_id] =
-                info_block->key_list[atualization_counter];
-                
-                sister_node->descendants_RRN[control_id + 1] =
-                info_block->rrn_list[atualization_counter + 1];
-                
-                (sister_node->occupancy_rate)++;
-            }else{
-                sister_node->keys[control_id].value = -1;
-                sister_node->keys[control_id].byteOffset = -1;
-                
-                sister_node->descendants_RRN[control_id + 1] = -1;
-            }
-            
-            atualization_counter++;
-        }
+        sister_node = overflow_atualizing_Node(sister_node, info_block,
+             info_block->ascended_id[0] + 1, info_block->list_len, 2 * (TREE_ORDER -1) + 1);
         
     // the case where the insertion page is higher than the sister_page ;
     }else{
         
-        // atualizing the insertion page:
-        sister_node->descendants_RRN[0] = info_block->rrn_list[0];
+        sister_node = overflow_atualizing_Node(sister_node, info_block, 0,
+             info_block->ascended_id[0], TREE_ORDER - 1);
         
-        while(atualization_counter < TREE_ORDER-1){
-                      
-            if(atualization_counter < info_block->ascended_id[0]){
-                sister_node->keys[atualization_counter] =
-                info_block->key_list[atualization_counter];
-                
-                sister_node->descendants_RRN[atualization_counter + 1] =
-                info_block->rrn_list[atualization_counter + 1];
-                
-                (sister_node->occupancy_rate)++;
-            }else{
-                sister_node->keys[atualization_counter].value = -1;
-                sister_node->keys[atualization_counter].byteOffset = -1;
-                
-                sister_node->descendants_RRN[atualization_counter + 1] = -1;
-            }
-            
-            atualization_counter++;
-        }
-        
-        atualization_counter++;
-        
-        // atualizing the sister page:
-        
-        insertion_node->descendants_RRN[0] = info_block->rrn_list[atualization_counter];
-        
-        while (atualization_counter < 2 * (TREE_ORDER -1) + 1) {
-            
-            // this index control the accessing of the sister page
-            // positions given that the counter above access the
-            // overflow lists;
-            
-            int control_id = atualization_counter - 5;
-            
-            if(atualization_counter < info_block->list_len){
-                insertion_node->keys[control_id] =
-                info_block->key_list[atualization_counter];
-                
-                insertion_node->descendants_RRN[control_id + 1] =
-                info_block->rrn_list[atualization_counter + 1];
-                
-                (insertion_node->occupancy_rate)++;
-            }else{
-                insertion_node->keys[control_id].value = -1;
-                insertion_node->keys[control_id].byteOffset = -1;
-                
-                insertion_node->descendants_RRN[control_id + 1] = -1;
-            }
-            
-            atualization_counter++;
-        }
+        insertion_node = overflow_atualizing_Node(insertion_node, info_block,
+             info_block->ascended_id[0] + 1, info_block->list_len, 2 * (TREE_ORDER -1) + 1);
     }
     
     // CLEANING THE AUXILIARY STRUCTURES
@@ -760,61 +440,100 @@ void key_redistribuition(BT_node_t * father_node, BT_node_t * insertion_node,
     free(info_block->key_list);
     free(info_block->rrn_list);
     free(info_block);
+    info_block = NULL;
+    
+    // WRITING IN SECONDARY MEMORY!!!!!
 }
 
-Overflow_block * create_oveflowBlock_1Node(BT_node_t * insertion_node, Insertion_block block){
+
+
+/*
+ RECEBE:
+    O nó pai de onde a inserção parte;
+    O arquivo da árvore
+    O id da pagina onde vai ocorrer a inserção
+    Um endereço do tipo Path_Running onde será armazenada a direção da página escolhida
+        com base na página de inserção
+ RETORNA:
+    A posição em memória da página irmã
+ */
+
+
+Insertion_block * node_split2_3(BT_node_t * father_node, BT_node_t * insertion_node,
+     BT_node_t * sister_node, FILE * index_file, int id_father_key,
+     Insertion_block * block, Path_running sisterPage_direction,
+     BTree * tree){
     
-    // for storing
     Overflow_block * info_block;
-    int inserting_key_counter = 0;
-    int inserting_rrn_counter = 0;
-    // for searching
-    Path_running path;
-    int last_accessed_id;
-    int b_search_return;
-
+    int new_rrn;
     
-    // building the list
-    info_block = (Overflow_block *) malloc(sizeof(Overflow_block));
-    assert(info_block);
-    info_block->list_len = 1 + insertion_node->occupancy_rate;
-    info_block->key_list = (BT_key *) malloc(sizeof(BT_key) * info_block->list_len);
-    assert(info_block->key_list);
-    info_block->rrn_list = (int *) malloc(sizeof(int) * (info_block->list_len+1));
-
+    // CREATING THE REDISTRIBUITION STRUCTURE : keys and pointers lists
+    
+    info_block = create_oveflowBlock_3Nodes(father_node->keys[id_father_key],
+         insertion_node, sister_node, *block, sisterPage_direction);
+    
+    // calculating the third_value of the list
+    info_block->ascended_id[0] = info_block->list_len / 3 ;
+    info_block->ascended_id[1] = 2 * info_block->list_len / 3 ;
+    
+    // CREATING THE NEW NODE IN MAIN MEMORY
+    BT_node_t * new_node = bt_node_create();
+    
+    new_node->level = insertion_node->level;
+    new_node->occupancy_rate = 0;
+    new_rrn = tree->header->prox_RRN;
+    
+    // Atualizing the next RRN in the tree ;
+    tree->header->prox_RRN = tree->header->prox_RRN + 1;
+    
+    // ASCENDING THE PROPAGATED NODES
+    
+    // -> the first node ascended will be exchanged with the father key
+    father_node->keys[id_father_key] =
+    info_block->key_list[info_block->ascended_id[0]];
+    
+    // -> the second node will be propageted in the tree recursion;
+    block->key = info_block->key_list[info_block->ascended_id[1]];
+    block->right_RRN = new_rrn;
+    
+    // ATUALIZING THE INSERTION LEVEL NODES
+    
+    insertion_node->occupancy_rate = 0;
+    sister_node->occupancy_rate = 0;
+    
+    if(sisterPage_direction == RIGHT){
         
-    // inserting the node keys and rrn values into the overflow_block key and rrn vectors ;
-    while(inserting_key_counter < insertion_node->occupancy_rate){
+        insertion_node = overflow_atualizing_Node(insertion_node, info_block, 0,
+             info_block->ascended_id[0], TREE_ORDER - 1);
         
-        info_block->key_list[inserting_key_counter] =
-        insertion_node->keys[inserting_key_counter];
+        sister_node = overflow_atualizing_Node(sister_node, info_block,
+            info_block->ascended_id[0] + 1, info_block->ascended_id[1], 2 * (TREE_ORDER - 1) + 1);
         
-        info_block->rrn_list[inserting_rrn_counter] =
-        insertion_node->descendants_RRN[inserting_rrn_counter];
+    }else{
         
-        inserting_key_counter++;
-        inserting_rrn_counter++;
+        sister_node = overflow_atualizing_Node(sister_node, info_block, 0,
+             info_block->ascended_id[0], TREE_ORDER - 1);
+        
+        insertion_node = overflow_atualizing_Node(insertion_node, info_block,
+             info_block->ascended_id[0] + 1, info_block->ascended_id[1], 2 * (TREE_ORDER - 1) + 1);
     }
     
-    // inserting the last RRN from the node ;
-    info_block->rrn_list[inserting_rrn_counter] =
-    insertion_node->descendants_RRN[inserting_rrn_counter];
-    inserting_rrn_counter++;
+    new_node = overflow_atualizing_Node(new_node, info_block, info_block->ascended_id[1] + 1,
+             info_block->list_len, 3 * (TREE_ORDER - 1) + 2);
     
-    // searching the insertion position in the key_list
-    b_search_return = key_binary_search(info_block->key_list, 0, info_block->list_len - 1,
-                            block.key.value, &last_accessed_id, &path);
+    // CLEANING THE AUXILIARY STRUCTURES
+    
+    free(info_block->key_list);
+    free(info_block->rrn_list);
+    free(info_block);
+    info_block = NULL;
+    
+    // WRITING IN SECONDARY MEMORY !!!!!
 
-    // the last_accessed_id + path represents where the key will be placed
-    info_block->inserted_id = (path == LEFT) ? last_accessed_id : last_accessed_id + 1;
-
-    node_list_shift(info_block->key_list, info_block->inserted_id, info_block->list_len - 1, KEY);
-    node_list_shift(info_block->rrn_list, info_block->inserted_id, info_block->list_len - 1, RRN);
     
-    info_block->key_list[info_block->inserted_id] = block.key;
-    info_block->rrn_list[info_block->inserted_id+1] = block.right_RRN;
-    // calculating the mid_value of the list
-    info_block->ascended_id[0] = info_block->list_len / 2 ;
+    // LIBERATING MEMORY !!!!!!!!!
     
-    return info_block;
+    return block;
+    
 }
+

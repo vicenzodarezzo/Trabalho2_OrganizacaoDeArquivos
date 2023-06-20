@@ -73,7 +73,7 @@ BT_node_t * overflow_atualizing_Node(BT_node_t * tree_node, Overflow_block * inf
     
     //PRINT PARA DEBUGAR;
     printf("ANTES:\n");
-    print_no(tree_node);
+    print_node(tree_node);
     
     int access_counter = 0;
     
@@ -108,7 +108,7 @@ BT_node_t * overflow_atualizing_Node(BT_node_t * tree_node, Overflow_block * inf
     
     //PRINT PARA DEBUGAR;
     printf("DEPOIS:\n");
-    print_no(tree_node);
+    print_node(tree_node);
     
     return tree_node;
 }
@@ -216,7 +216,7 @@ Overflow_block * create_oveflowBlock_1Node(BT_node_t * insertion_node, Insertion
     info_block->key_list = (BT_key *) malloc(sizeof(BT_key) * info_block->list_len);
     assert(info_block->key_list);
     
-    info_block->rrn_list = (int *) malloc(sizeof(int) * (info_block->list_len+1));
+    info_block->rrn_list = (int *) malloc(sizeof(int) * (info_block->list_len + 1));
     assert(info_block->rrn_list);
         
     // inserting the node keys and rrn values into the overflow_block key and rrn vectors ;
@@ -235,7 +235,7 @@ Overflow_block * create_oveflowBlock_1Node(BT_node_t * insertion_node, Insertion
     node_list_shift(info_block->rrn_list, info_block->inserted_id, info_block->list_len - 1, RRN);
     
     info_block->key_list[info_block->inserted_id] = block.key;
-    info_block->rrn_list[info_block->inserted_id+1] = block.right_RRN;
+    info_block->rrn_list[info_block->inserted_id + 1] = block.right_RRN;
     
     // calculating the mid_value of the list
     info_block->ascended_id[0] = info_block->list_len / 2 ;
@@ -348,3 +348,5 @@ BT_node_t * node_Split2_3_decision(BT_node_t * father_node, int overflowed_RRN_i
         return NULL;
     }
 }
+
+

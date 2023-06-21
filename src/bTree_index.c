@@ -284,15 +284,15 @@ int key_binary_search(BT_key * list, int inicial_id, int final_id, int filter_va
    
 }
 
-Branching_value bTree_branching_through_node(BT_node_t * node, int filter_value, bool * find_flag){
+Branching_value bTree_branching_through_node(BT_node_t * node, int filter_value, bool * find_flag,
+     int * last_key_id){
     
     int return_bSearch;
     Path_running path;
-    int last_key_id;
     Branching_value result;
     
     // searching for the filter value in the keys list of the current node;
-    return_bSearch = key_binary_search(node->keys, 0, node->occupancy_rate - 1, filter_value, &last_key_id, &path);
+    return_bSearch = key_binary_search(node->keys, 0, node->occupancy_rate - 1, filter_value, last_key_id, &path);
     
     if(return_bSearch != -1){
         // The value searched is in the returned position of the key list;
@@ -303,7 +303,7 @@ Branching_value bTree_branching_through_node(BT_node_t * node, int filter_value,
         // in the other case, the deep search has to continue through on of
         // the child pointer of the node;
         int next_RRN_id;
-        next_RRN_id = (path == LEFT) ? last_key_id : last_key_id + 1 ;
+        next_RRN_id = (path == LEFT) ? *last_key_id : *last_key_id + 1 ;
         result.next_RRN = node->descendants_RRN[next_RRN_id];
     }
     return result;
@@ -315,8 +315,9 @@ long long int bTree_id_search(FILE * index_file, BT_node_t * node, int filter_va
     long long int info;
     bool find_flag;
     Branching_value branching_result;
+    int last_key_id;
     
-    branching_result = bTree_branching_through_node(node, filter_value, &find_flag);
+    branching_result = bTree_branching_through_node(node, filter_value, &find_flag, &last_key_id);
     
     
     if(find_flag) info = branching_result.finded_key.byteOffset;
@@ -365,7 +366,7 @@ long long int bTree_id_search(FILE * index_file, BT_node_t * node, int filter_va
 //ponteiro propagado ou setado para -1;
 
 void key_sorted_insertion(BT_node_t * node, Insertion_block * block, FILE * index_file,
-     int insertion_RRN, bool root_flag){
+     int insertion_RRN){
 
     // the first step in this case is find where
     // the new key will be placed in the node
@@ -380,7 +381,7 @@ void key_sorted_insertion(BT_node_t * node, Insertion_block * block, FILE * inde
     print_node(node);
 
     b_search_return = key_binary_search(node->keys, 0, node->occupancy_rate,
-                            block->key.value, &last_accessed_id, &path);
+        block->key.value, &last_accessed_id, &path);
 
     // the last_accessed_id + path represents where the key will be placed
     key_position = (path == LEFT) ? last_accessed_id : last_accessed_id + 1;
@@ -407,11 +408,6 @@ void key_sorted_insertion(BT_node_t * node, Insertion_block * block, FILE * inde
 
     printf("no dps:\n");
     print_node(node);
-    
-    // erasing the node if it isn`t the root:
-    if(!root_flag){
-        bt_node_delete(&node);
-    }
 }
 
 
@@ -496,7 +492,6 @@ void key_redistribuition(BT_node_t * father_node, BT_node_t * insertion_node,
     
     // LIBERATING THE ADRESSED MEMORY
     
-    bt_node_delete(&insertion_node);
     bt_node_delete(&sister_node);
     
 }
@@ -605,13 +600,15 @@ Insertion_block * node_split2_3(BT_node_t * father_node, BT_node_t * insertion_n
     
     // LIBERATING THE ADRESSED MEMORY
     
-    bt_node_delete(&insertion_node);
     bt_node_delete(&sister_node);
     
     return block;
 }
 
-void node_split1_2(BT_node_t * root_node, BTree * tree, Insertion_block * block, FILE * index_file){
+void node_split1_2(BT_node_t * root_node, BTree * tree, Insertion_block * block){
+    
+    FILE * index_file;
+    index_file = tree->index_file;
     
     // creating the Overflow structure to store all the nodes information ;
     Overflow_block * info_block = create_oveflowBlock_1Node(root_node, * block);
@@ -667,8 +664,124 @@ void node_split1_2(BT_node_t * root_node, BTree * tree, Insertion_block * block,
     bt_node_write(sister_node, index_file);
     
     // LIBERATING THE ADRESSED MEMORY
-    
-    bt_node_delete(&root_node);
+
     bt_node_delete(&sister_node);
 }
 
+Insertion_block * overflow_treatment( BTree * tree, BT_node_t * father_node,
+     BT_node_t * overflowed_node, int father_RRN, int overflowed_RRN_id,
+     int id_father_key, Insertion_block * insert_info){
+    
+    Insertion_block * propagated_block;
+    
+    if(father_node->descendants_RRN[overflowed_RRN_id] == tree->header->root_RRN){
+    
+        node_split1_2(overflowed_node, tree, insert_info);
+        propagated_block = NULL;
+        
+    }else{
+        
+        BT_node_t * sister_node;
+        Path_running sister_direction;
+        
+        sister_node = key_redistribuition_decision(father_node, overflowed_RRN_id,
+            tree->index_file, &sister_direction);
+        
+        if(sister_node != NULL){
+            
+            key_redistribuition(father_node, overflowed_node, sister_node, id_father_key,
+                 *insert_info, sister_direction, tree->index_file, father_RRN);
+            propagated_block = NULL;
+            
+        }else{
+            
+            sister_node = node_Split2_3_decision(father_node, overflowed_RRN_id,
+                 tree->index_file, &sister_direction);
+            
+            // in the case of the 2-3 split, the propagated block will carry
+            // the second ascended key with the RRN pointer to the new node
+            // allocated, ir order to insert the block in the father node;
+            
+            propagated_block = node_split2_3(father_node, overflowed_node, sister_node,
+                 id_father_key, insert_info, sister_direction, tree, father_RRN);
+            
+        }
+    }
+    
+    return propagated_block;
+}
+
+void bTree_insertion_in_node(BTree * tree, BT_node_t * current_node, BT_node_t * father_node,
+  int father_RRN, int current_RRN, int id_father_key, Insertion_block * insertion_info){
+    
+    if(tree->root->occupancy_rate == 0){
+        // empty tree : insertion in the empty root
+        key_sorted_insertion(tree->root, insertion_info, tree->index_file,
+             tree->header->root_RRN);
+        
+    }else{
+        
+        if(current_node->occupancy_rate < TREE_ORDER - 1){
+            
+            // there is space in the current node and it is a leaf, so, we insert the key
+            key_sorted_insertion(current_node, insertion_info, tree->index_file, current_RRN);
+            
+        }else{
+            
+            insertion_info = overflow_treatment(tree, father_node, current_node, father_RRN,
+                 current_RRN, id_father_key, insertion_info);
+        }
+    }
+}
+    
+
+void bTree_recursion_insertion(BTree * tree, BT_node_t * current_node, int current_RRN,
+    BT_node_t * last_node, int last_node_RRN, int last_key_id, Insertion_block * block){
+    
+    // searching the information in the node :
+    
+    bool find_flag;
+    int new_key_id;
+    Branching_value branch_result;
+    
+    branch_result = bTree_branching_through_node(current_node, block->key.value, &find_flag,
+        &new_key_id);
+    
+    if(find_flag){
+        fprintf(stdout, "THE INSERTED KEY ALREADY EXISTS IN TREE\n");
+        exit(1);
+    }else{
+        
+        // now we have to be able to find the end of the insertion path to
+        // insert the node in the right position
+        
+        if(branch_result.next_RRN != -1){
+            
+            // there is a valid pointer to be accessed in the current node, causing the
+            // insertion to branch through the depth of the tree ;
+            
+            BT_node_t * new_node = bt_node_read(tree->index_file, branch_result.next_RRN);
+            
+            bTree_recursion_insertion(tree, new_node, branch_result.next_RRN, current_node,
+               current_RRN, new_key_id, block);
+            
+            // in the recursion tail, we liberate the memory associated to the obsolete node
+            bt_node_delete(&new_node);
+            
+            // still in the tail, we have to treat the case of an propagated key that can
+            // be generated by a 2-3 split with a full father node;
+            // for this, we have to test in every tail if a key is still in the insertion
+            // block registry.
+            
+            if(block != NULL){
+                bTree_insertion_in_node(tree, current_node, last_node,
+                last_node_RRN, branch_result.next_RRN, last_key_id, block);
+            }
+            
+        }else{
+            
+            bTree_insertion_in_node(tree, current_node, last_node,
+               last_node_RRN, branch_result.next_RRN, last_key_id, block);
+        }
+    }
+}

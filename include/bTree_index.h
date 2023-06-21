@@ -177,8 +177,8 @@ int key_binary_search(BT_key * list, int inicial_id, int final_id, int filter_va
  * and can read at most more 3 nodes in its implamentation.
  *
  * In the end of the overflow procedures, the functions writes in the index file
- * the nodes that has been changed and liberates the memory alocated except for the
- * father node. For him, the liberation has to be done in the insertion recursion.
+ * the nodes that has been changed and liberates the memory alocated for sister nodes.
+ * For the inserted and the father, the liberation occurs in the recursion of the insertion.
  *
  *
  *

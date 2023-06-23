@@ -44,6 +44,7 @@ int main(int argc, char ** argv){
             
             select_from(f_data, f_index, index_field, n_search);
             
+            fseek(f_data, 0, SEEK_SET);
             data_file_settingStatus(f_data, '1');
             
             fclose(f_data);

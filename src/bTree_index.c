@@ -300,6 +300,7 @@ Branching_value bTree_branching_through_node(BT_node_t * node, int filter_value,
         // In this case, the returned value is the searched key
         result.finded_key = node->keys[return_bSearch];
     }else{
+        *find_flag = false;
         // in the other case, the deep search has to continue through on of
         // the child pointer of the node;
         int next_RRN_id;
@@ -316,7 +317,7 @@ long long int bTree_id_search(FILE * index_file, BT_node_t * node, int filter_va
     bool find_flag;
     Branching_value branching_result;
     int last_key_id;
-    
+        
     branching_result = bTree_branching_through_node(node, filter_value, &find_flag, &last_key_id);
     
     

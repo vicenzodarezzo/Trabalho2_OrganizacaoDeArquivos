@@ -221,7 +221,7 @@ char * variable_field_reading(FILE * read_file, long long int * counter){
 long long int crime_reading(FILE * read_file, Crime_t * crime){
     
     Crime_t * pointer = crime;
-    char * varible_field_info;
+    char * variable_field_info;
     long long int  counter = 0 ;
     
     // Reading the fixed lenght fields of the register
@@ -233,8 +233,9 @@ long long int crime_reading(FILE * read_file, Crime_t * crime){
     
     //Reading the variable lenght fields of the register
     for (int i = 0; i < 2; i++) {
-        varible_field_info = variable_field_reading(read_file, &counter);
-        crime_field_association(varible_field_info, 3+i, crime);
+        variable_field_info = variable_field_reading(read_file, &counter);
+        crime_field_association(variable_field_info, 3+i, crime);
+        free(variable_field_info);
     }
     
     
@@ -255,12 +256,12 @@ Crime_t * input_information_reading_for_searches(bool * index_search, int * sear
     
     for (int i = 0; i < n_fields; i++){
         
-        fscanf(stdin, "%s", name_field_buffer);
+        fscanf(stdin, " %s", name_field_buffer);
        
         searched_fields[i] = index_crimeField_pairing(name_field_buffer);
         
         if(searched_fields[i] == 0 || searched_fields[i] == 2){
-            fscanf(stdin, "%s", info_field_buffer);
+            fscanf(stdin, " %s", info_field_buffer);
         }else{
             scan_quote_string(info_field_buffer);
         }
@@ -432,7 +433,8 @@ long long int byteOffset_point_access(long long int byteOffset, FILE * data_file
     long long int returned_counter;
     Crime_t * crime_reading_pointer = crime_create();
     
-    fseek(data_file, byteOffset, SEEK_SET);
+    fseek(data_file, (unsigned long) byteOffset, SEEK_SET);
+    fflush(stdout);
     returned_counter = crime_reading(data_file, crime_reading_pointer);
     
     if(crime_reading_pointer->removed != '1'){

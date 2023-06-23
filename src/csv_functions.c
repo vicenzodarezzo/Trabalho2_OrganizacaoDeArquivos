@@ -116,9 +116,16 @@ void select_from(FILE * data_file, FILE * index_file, char * index_name, int n_s
         }
         
         if(exe.results_flag == false) fprintf(stdout, "Registro inexistente.\n");
+
         crime_delete(&crime_filter);
     }
     
     //deleting the tree
     bTree_closing(&tree);
 }
+
+// -------------------------------------------------
+// -------------------------------------------------
+// -> INSERTION FUNCTIONS:
+// -------------------------------------------------
+// -------------------------------------------------

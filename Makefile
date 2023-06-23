@@ -3,7 +3,7 @@ FLAGS = -std=c99
 
 TEST_CASE = 4.in
 
-OBJECTS = bTree_index.o registers.o inputOutput.o csv_functions.o main.o
+OBJECTS = bTree_index.o registers.o inputOutput.o overflow_management.o csv_functions.o main.o
 BIN = main
 
 all: $(OBJECTS)
@@ -14,6 +14,9 @@ csv_functions.o:
 	
 bTree_index.o:
 	gcc $(FLAGS) -c src/bTree_index.c
+	
+overflow_management.o:
+	gcc $(FLAGS) -c src/overflow_management.c
 	
 registers.o:
 	gcc $(FLAGS) -c src/registers.c
@@ -31,7 +34,7 @@ clean:
 	rm *.o $(BIN)
 
 run_test:
-	run < $(TEST_CASE)
+	make run < $(TEST_CASE)
 
 clean_test:
 	rm *.in *.out *.bin

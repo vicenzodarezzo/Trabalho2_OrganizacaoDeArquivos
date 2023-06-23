@@ -16,7 +16,7 @@ bTree_index.o:
 	gcc $(FLAGS) -c src/bTree_index.c
 	
 overflow_management.o:
-	gcc $(FLAGS) - src/overflow_management.c
+	gcc $(FLAGS) -c src/overflow_management.c
 	
 registers.o:
 	gcc $(FLAGS) -c src/registers.c
@@ -34,7 +34,7 @@ clean:
 	rm *.o $(BIN)
 
 run_test:
-	run < $(TEST_CASE)
+	make run < $(TEST_CASE)
 
 clean_test:
 	rm *.in *.out *.bin

@@ -96,7 +96,7 @@ void scan_quote_string(char *str) {
 // WRITING FUNCTIONS: -----------------------------------------------------------
 
 
-// This is an auxiliar function to manages writing correctly variable lenght char fields in
+// This is an auxiliar function to manage writing correctly the variable lenght char fields in
 // the file. It assures the correct delimiter and returns the specified number of written bytes.
 long long int crime_varible_length_field_write(Crime_t * crime, int id_field, FILE * f){
     
@@ -256,12 +256,12 @@ Crime_t * input_information_reading_for_searches(bool * index_search, int * sear
     
     for (int i = 0; i < n_fields; i++){
         
-        fscanf(stdin, " %s", name_field_buffer);
+        fscanf(stdin, "%s", name_field_buffer);
        
         searched_fields[i] = index_crimeField_pairing(name_field_buffer);
         
         if(searched_fields[i] == 0 || searched_fields[i] == 2){
-            fscanf(stdin, " %s", info_field_buffer);
+            fscanf(stdin, "%s", info_field_buffer);
         }else{
             scan_quote_string(info_field_buffer);
         }
@@ -283,10 +283,14 @@ Crime_t * Crime_insertion_input_reading(int id_index, bool * index_flag, char * 
     
     for(int i = 0;  i < 6; i++){
         scan_quote_string(buffer);
-    
+
         if(i == id_index){
-            if(strcmp(buffer, "") == 0) *index_flag = false;
-            else strcpy(index_info, buffer);
+            if(strcmp(buffer, "") == 0){
+                *index_flag = false;
+            }else{
+                *index_flag = true;
+                strcpy(index_info, buffer);
+            }
         }
         
         crime_field_association(buffer, i, crime);
@@ -375,7 +379,7 @@ void linear_selection(FILE * data_file, CallBackF * executable){
     assert(data_file);
     Header_t * header = header_create();
     long long int  current_byteOffset = 0;
-    long long int  last_byteOffset;
+    //long long int  last_byteOffset;
     
     current_byteOffset += header_reading(data_file, header);
     
@@ -394,7 +398,7 @@ void linear_selection(FILE * data_file, CallBackF * executable){
 
     for(int counter = 0; counter < header->nRegFile; counter++){
         
-        last_byteOffset = current_byteOffset;
+        //last_byteOffset = current_byteOffset;
         current_byteOffset += crime_reading(data_file, crime_reading_pointer);
         
         if(crime_reading_pointer->removed != '1'){
@@ -433,8 +437,7 @@ long long int byteOffset_point_access(long long int byteOffset, FILE * data_file
     long long int returned_counter;
     Crime_t * crime_reading_pointer = crime_create();
     
-    fseek(data_file, (unsigned long) byteOffset, SEEK_SET);
-    fflush(stdout);
+    fseek(data_file, byteOffset, SEEK_SET);
     returned_counter = crime_reading(data_file, crime_reading_pointer);
     
     if(crime_reading_pointer->removed != '1'){

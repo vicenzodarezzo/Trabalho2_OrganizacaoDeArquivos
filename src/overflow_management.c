@@ -17,6 +17,7 @@
 void node_list_shift(void * list, int new_key_position, int occupancy_rate, List_type type){
     
     printf("SHIFTANDO UMA LISTA\n");
+    printf("Posicao de insercerção : %d \n", new_key_position);
     
     if(type == KEY){
         
@@ -26,6 +27,8 @@ void node_list_shift(void * list, int new_key_position, int occupancy_rate, List
         for(int i = occupancy_rate; i > new_key_position; i--){
             key_list[i] = key_list[i-1];
         }
+        
+
     }else{
         
         printf("TIPO INT\n");
@@ -34,8 +37,18 @@ void node_list_shift(void * list, int new_key_position, int occupancy_rate, List
         // so, the contion and the position acces of the loop has to be
         // adapted;
         int * rrn_list = (int *) list;
+        
+        printf("LISTA ANTES");
+        for (int i = 0; i <= occupancy_rate + 1; i++) {
+            printf(" %d ", rrn_list[i]);
+        }
+        
         for (int i = occupancy_rate; i >= new_key_position; i--) {
-            rrn_list[i+2] = rrn_list[i+1];
+            rrn_list[i+1] = rrn_list[i];
+        }
+        printf("LISTA DPS");
+        for (int i = 0; i <= occupancy_rate + 1; i++) {
+            printf(" %d ", rrn_list[i]);
         }
     }
 }
@@ -46,9 +59,9 @@ Overflow_block * overflow_inicializing_interval(Overflow_block * info_block,
     int access_counter = 0; // control the access index in the node
     
     // passing the first pointer of the list to allign the key and pointer
-    // atualization in the loop
+    // actualization in the loop
     
-    info_block->rrn_list[list_ini_position] = src_node->descendants_RRN[access_counter++];
+    info_block->rrn_list[list_ini_position] = src_node->descendants_RRN[access_counter];
     
     while (list_ini_position < list_final_postion) {
         
@@ -69,7 +82,7 @@ Overflow_block * overflow_inicializing_interval(Overflow_block * info_block,
 // size limit : posicao fim de memória : TREE ORDER - 1
 
 BT_node_t * overflow_atualizing_Node(BT_node_t * tree_node, Overflow_block * info_block,
-     int inicial_overflowList_id, int information_limit, int size_limit){
+     int inicial_overflowList_id, int information_limit){
     
     //PRINT PARA DEBUGAR;
     printf("ANTES:\n");
@@ -85,7 +98,7 @@ BT_node_t * overflow_atualizing_Node(BT_node_t * tree_node, Overflow_block * inf
     
     tree_node->descendants_RRN[access_counter] = info_block->rrn_list[inicial_overflowList_id];
     
-    for(int i = inicial_overflowList_id; i < size_limit; i++){
+    for(int i = inicial_overflowList_id; i < inicial_overflowList_id + 4; i++){
         
         if(i < information_limit){
             
@@ -130,7 +143,7 @@ BT_node_t * overflow_atualizing_Node(BT_node_t * tree_node, Overflow_block * inf
     O comprimento da lista
  */
 Overflow_block * create_oveflowBlock_3Nodes(BT_key father_key, BT_node_t * insertion_node,
-        BT_node_t * sister_node, Insertion_block block, Path_running sister_direction){
+        BT_node_t * sister_node, Insertion_block * block, Path_running sister_direction){
     
     // for storing
     Overflow_block * info_block;
@@ -139,13 +152,15 @@ Overflow_block * create_oveflowBlock_3Nodes(BT_key father_key, BT_node_t * inser
     // for searching
     Path_running path;
     int last_accessed_id;
-    int b_search_return;
+    //int b_search_return;
     
     // building the oveflow block and its lists
     info_block = (Overflow_block *) malloc(sizeof(Overflow_block));
     assert(info_block);
     
     info_block->list_len = 2 + insertion_node->occupancy_rate + sister_node->occupancy_rate;
+    
+    printf("TAMANHO ALOCADO PARA LISTA : %d\n", info_block->list_len);
     
     info_block->key_list = (BT_key *) malloc(sizeof(BT_key) * info_block->list_len);
     assert(info_block->key_list);
@@ -181,8 +196,8 @@ Overflow_block * create_oveflowBlock_3Nodes(BT_key father_key, BT_node_t * inser
     }
     
     // searching the insertion position in the key_list
-    b_search_return = key_binary_search(info_block->key_list, 0, info_block->list_len - 1,
-                            block.key.value, &last_accessed_id, &path);
+    key_binary_search(info_block->key_list, 0, info_block->list_len - 2,
+                            block->key.value, &last_accessed_id, &path);
 
     // the last_accessed_id + path represents where the key will be placed
     info_block->inserted_id = (path == LEFT) ? last_accessed_id : last_accessed_id + 1;
@@ -190,8 +205,9 @@ Overflow_block * create_oveflowBlock_3Nodes(BT_key father_key, BT_node_t * inser
     node_list_shift(info_block->key_list, info_block->inserted_id, info_block->list_len - 1, KEY);
     node_list_shift(info_block->rrn_list, info_block->inserted_id, info_block->list_len - 1, RRN);
     
-    info_block->key_list[info_block->inserted_id] = block.key;
-    info_block->rrn_list[info_block->inserted_id+1] = block.right_RRN;
+    info_block->key_list[info_block->inserted_id].value = block->key.value;
+    info_block->key_list[info_block->inserted_id].byteOffset = block->key.byteOffset;
+    info_block->rrn_list[info_block->inserted_id+1] = block->right_RRN;
     
     return info_block;
 }
@@ -205,7 +221,7 @@ Overflow_block * create_oveflowBlock_1Node(BT_node_t * insertion_node, Insertion
     // for searching
     Path_running path;
     int last_accessed_id;
-    int b_search_return;
+    //int b_search_return;
 
     // building the list
     info_block = (Overflow_block *) malloc(sizeof(Overflow_block));
@@ -225,7 +241,7 @@ Overflow_block * create_oveflowBlock_1Node(BT_node_t * insertion_node, Insertion
          0, insertion_node->occupancy_rate);
     
     // searching the insertion position in the key_list
-    b_search_return = key_binary_search(info_block->key_list, 0, info_block->list_len - 1,
+    key_binary_search(info_block->key_list, 0, info_block->list_len - 2,
                             block.key.value, &last_accessed_id, &path);
 
     // the last_accessed_id + path represents where the key will be placed
@@ -236,9 +252,6 @@ Overflow_block * create_oveflowBlock_1Node(BT_node_t * insertion_node, Insertion
     
     info_block->key_list[info_block->inserted_id] = block.key;
     info_block->rrn_list[info_block->inserted_id + 1] = block.right_RRN;
-    
-    // calculating the mid_value of the list
-    info_block->ascended_id[0] = info_block->list_len / 2 ;
     
     return info_block;
 }
@@ -266,31 +279,32 @@ BT_node_t * key_redistribuition_decision(BT_node_t * father_node, int overflowed
     
     BT_node_t * node_buffer_left = NULL;
     BT_node_t * node_buffer_right = NULL;
-    int sister_rrn;
+    int sister_rrn_id = 0;
 
     // testing if the insertion position is one of the list limits case :
     if(overflowed_RRN_id != 0){
-        sister_rrn = overflowed_RRN_id - 1;
-        if(sister_rrn >= 0){
-            node_buffer_left = bt_node_read(index_file, sister_rrn);
+        sister_rrn_id = overflowed_RRN_id - 1;
+        if(sister_rrn_id >= 0){
+            node_buffer_left = bt_node_read(index_file, father_node->descendants_RRN[sister_rrn_id]);
         }
-    }else if(overflowed_RRN_id != TREE_ORDER - 1){
-        sister_rrn = overflowed_RRN_id + 1;
-        if(sister_rrn >= 0){
-            node_buffer_right = bt_node_read(index_file, sister_rrn);
+    }if(overflowed_RRN_id != father_node->occupancy_rate){
+        sister_rrn_id = overflowed_RRN_id + 1;
+        if(sister_rrn_id >= 0){
+            node_buffer_right = bt_node_read(index_file, father_node->descendants_RRN[sister_rrn_id]);
         }
     }
     
     // deciding which of the nodes, or none of them, will be targeted by
     // the redistribuition.
+    
     if(node_buffer_left != NULL && node_buffer_left->occupancy_rate < TREE_ORDER - 1){
-        
+        printf("\nESCOLHEU IRMA DA ESQUERDA - RRN : %d\n", father_node->descendants_RRN[sister_rrn_id]);
         if(node_buffer_right != NULL) bt_node_delete(&node_buffer_right);
         *direction = LEFT;
         return node_buffer_left;
         
     }else if(node_buffer_right != NULL && node_buffer_right->occupancy_rate < TREE_ORDER - 1){
-        
+        printf("\nESCOLHEU IRMA DA DIREITA - RRN : %d\n", father_node->descendants_RRN[sister_rrn_id]);
         if(node_buffer_left != NULL) bt_node_delete(&node_buffer_left);
         *direction = RIGHT;
         return node_buffer_right;
@@ -314,29 +328,31 @@ BT_node_t * node_Split2_3_decision(BT_node_t * father_node, int overflowed_RRN_i
     
     BT_node_t * node_buffer_left = NULL;
     BT_node_t * node_buffer_right = NULL;
-    int sister_rrn;
+    int sister_rrn_id = 0;
 
     // testing if the insertion position is one of the list limits case :
     if(overflowed_RRN_id != 0){
-        sister_rrn = overflowed_RRN_id - 1;
-        if(sister_rrn >= 0){
-            node_buffer_left = bt_node_read(index_file, sister_rrn);
+        sister_rrn_id = overflowed_RRN_id - 1;
+        if(sister_rrn_id >= 0){
+            node_buffer_left = bt_node_read(index_file, father_node->descendants_RRN[sister_rrn_id]);
         }
-    }else if(overflowed_RRN_id != TREE_ORDER - 1){
-        sister_rrn = overflowed_RRN_id + 1;
-        if(sister_rrn >= 0){
-            node_buffer_right = bt_node_read(index_file, sister_rrn);
+    }if(overflowed_RRN_id != father_node->occupancy_rate){
+        sister_rrn_id = overflowed_RRN_id + 1;
+        if(sister_rrn_id >= 0){
+            node_buffer_right = bt_node_read(index_file, father_node->descendants_RRN[sister_rrn_id]);
         }
     }
     
     // deciding which of the nodes, or none of them, will be targeted by
     // the redistribuition.
     if(node_buffer_right != NULL){
+        printf("\nESCOLHEU IRMA DA direita - RRN : %d\n", father_node->descendants_RRN[sister_rrn_id]);
         if(node_buffer_left != NULL) bt_node_delete(&node_buffer_left);
         *direction = RIGHT;
         return node_buffer_right;
         
     }else if(node_buffer_left != NULL){
+        printf("\nESCOLHEU IRMA DA esquerda - RRN : %d\n", father_node->descendants_RRN[sister_rrn_id]);
         if(node_buffer_right != NULL) bt_node_delete(&node_buffer_right);
         *direction = LEFT;
         return node_buffer_left;

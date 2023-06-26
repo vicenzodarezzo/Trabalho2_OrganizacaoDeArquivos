@@ -14,7 +14,7 @@
 Header_t * header_create(void){
     Header_t * h = (Header_t *) malloc(sizeof(Header_t));
     assert(h);
-    // assumes that, while creating the header register, the current file able to be read/written
+    // assumes that, while creating the header register, the current file is able to be read/written
     h->status = '0';
     h->nRegFile = 0;
     h->nRegRem = 0;
@@ -25,7 +25,7 @@ Header_t * header_create(void){
 
 void header_regNumber_increment(Header_t * h){
     assert(h);
-    (h)->nRegFile++;
+    (h->nRegFile)++;
 }
 
 void header_byteOffset_increment(Header_t * h, long long int n_bytes_written){

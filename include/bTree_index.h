@@ -12,7 +12,7 @@
 
 // -----------------------------------
 // -----------------------------------
-/* IMLEMENTATION INFORMATION */
+/* IMPLEMENTATION INFORMATION */
 // -----------------------------------
 // -----------------------------------
 
@@ -81,8 +81,8 @@ void bt_node_delete(BT_node_t ** node);
 void bt_header_delete(BT_header_t ** header);
 
 /**
- * Liberates the memory associated to the tree pointer correctly and sets the header status to valid again in second
- * memory. Is valid to remember that the file stored in the registry is not closed by this function, that task is not in the
+ * Frees the memory associated to the tree pointer correctly and sets the header status to valid again in second
+ * memory. It's valid to remember that the file stored in the registry is not closed by this function, that task is not in the
  * scope of the bTree TAD in our implementation.
  */
 void bTree_closing(BTree ** tree);
@@ -94,13 +94,13 @@ void bTree_closing(BTree ** tree);
 // -----------------------------------
 
 /*
- * It is worth to explain that theese reading functions are responsable
- * to create the space in the memory and inicilize it by the information
+ * It is worth to explain that these reading functions are responsable
+ * for allocating the space in memory and initializing it using the information
  * in the file passed as the parameter.
  
  * In that way, we also indicates that the files mentioned above have to
  * be opened by the implementation, The BTree TAD is not responsable for
- * opening or closing they.
+ * opening or closing them.
  */
 
 BT_header_t * bt_header_read(FILE * src);
@@ -117,8 +117,8 @@ BTree * bTree_initializing(FILE * index_file);
 
 /*
  * Is valid to say that the writing procedures do not manually move the read/write
- * file pointer inside the functions, so the program ha to set the right
- * position in the index file by it-self before the calling.
+ * file pointer inside the functions, so the program has to set the right
+ * position in the index file by itself before calling them.
  */
 
 void bt_header_write(BT_header_t * h, FILE * src);
@@ -137,7 +137,7 @@ void bt_node_write(BT_node_t * node, FILE * src);
  */
 int index_crimeField_pairing(char str[]);
 
-void print_node(BT_node_t * no);
+void print_node(BT_node_t * node);
 
 // -----------------------------------
 // -----------------------------------
@@ -147,8 +147,8 @@ void print_node(BT_node_t * no);
 
 /**
  * The functions that implements a search in the tree depth. The integer filter value representes the value of the searched key
- * in the file. In terms of memory, it receives the inicial node, the root, and, as it runs the recursion and access new nodes,
- * liberates theese in the recursion tail, accessing, in the worst case, N nodes simultaneously with N = tree height. In the end of the
+ * in the file. In terms of memory, it receives the initial node, the root, and, as it runs the recursion and access new nodes,
+ * it liberates these in the recursion tail, accessing, in the worst case, N nodes simultaneously with N = tree height. In the end of the
  * procedure, the only node maintained in main memory will be the root.
  * The returned value can be the byteOffset of the finded key, or -1, indicating that the key isn't in the tree.
  */
@@ -158,7 +158,7 @@ long long int bTree_id_search(FILE * index_file, BT_node_t * node, int filter_va
  * A binary search implemented in a key list of a node. The returns indicates the result of the search, being the position
  * of the filter_value in the list or -1, representing the case where the searched key isn't in the list. For auxiliar information
  * in other functions, the last id accessed in the list is stored, such as the direction of the branching of the search.
- * In that way, we can use theese auxiliar information for obtain where the key should be in that list,
+ * In that way, we can use that auxiliar information for finding where the key should be in that list,
  */
 int key_binary_search(BT_key * list, int inicial_id, int final_id, int filter_value, int * last_id, Path_running * path);
 
@@ -168,8 +168,8 @@ int key_binary_search(BT_key * list, int inicial_id, int final_id, int filter_va
 // -----------------------------------
 // -----------------------------------
 
-/*
- * The next functions assumes that the inserted information is a Key and a
+/* REVISAR ESSE COMENTARIO!!!!!!!
+ * The next functions assume that the inserted information is a Key and a
  * RRN pointer, that can maybe be valid, in the case of an propagated information
  * by the split2-3.
  *
@@ -177,11 +177,13 @@ int key_binary_search(BT_key * list, int inicial_id, int final_id, int filter_va
  * and can read at most more 3 nodes in its implamentation.
  *
  * In the end of the overflow procedures, the functions writes in the index file
- * the nodes that has been changed and liberates the memory alocated for sister nodes.
- * For the inserted and the father, the liberation occurs in the recursion of the insertion.
+ * the nodes that have been changed and frees the memory alocated except for the
+ * father node. For him, the memory freeing has to be done in the insertion recursion.
  *
  *
  *
  */
+
+void bTree_id_insertion(BTree * tree, BT_key key);
 
 #endif /* bTree_index_h */

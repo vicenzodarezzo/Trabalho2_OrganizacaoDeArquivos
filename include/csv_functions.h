@@ -19,6 +19,11 @@
 
 void data_file_settingStatus(FILE * data_file, char c);
 
+void index_file_settingHeader(FILE * index_file, char status, BT_header_t * header);
+
+void data_file_settingHeader(FILE * data_file, char status, Header_t * header);
+
+
 //--------------------------------------------------
 //--------------------------------------------------
 // -> DATA MANIPULATING FUNCTIONS
@@ -33,5 +38,14 @@ void data_file_settingStatus(FILE * data_file, char c);
 // -------------------------------------------------
 
 void select_from(FILE * data_file, FILE * index_file, char * index_name, int n_search);
+
+// -------------------------------------------------
+// -------------------------------------------------
+// -> INSERTION FUNCTIONS:
+// -------------------------------------------------
+// -------------------------------------------------
+
+void insert_into(FILE * data_file, FILE * index_file, char * index_name, int n_executions,
+     Header_t * data_header);
 
 #endif /* csv_functions_h */

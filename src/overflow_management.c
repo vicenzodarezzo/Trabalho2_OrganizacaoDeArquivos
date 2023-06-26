@@ -15,40 +15,22 @@
 
 
 void node_list_shift(void * list, int new_key_position, int occupancy_rate, List_type type){
-    
-    printf("SHIFTANDO UMA LISTA\n");
-    printf("Posicao de insercerção : %d \n", new_key_position);
-    
+
     if(type == KEY){
-        
-        printf("TIPO KEY\n");
         
         BT_key * key_list = (BT_key *) list;
         for(int i = occupancy_rate; i > new_key_position; i--){
             key_list[i] = key_list[i-1];
         }
-        
-
-    }else{
-        
-        printf("TIPO INT\n");
-        
+    }
+    else{
         // in this case, the RRN list has 1 more position than the key list
         // so, the contion and the position acces of the loop has to be
         // adapted;
         int * rrn_list = (int *) list;
         
-        printf("LISTA ANTES");
-        for (int i = 0; i <= occupancy_rate + 1; i++) {
-            printf(" %d ", rrn_list[i]);
-        }
-        
         for (int i = occupancy_rate; i >= new_key_position; i--) {
             rrn_list[i+1] = rrn_list[i];
-        }
-        printf("LISTA DPS");
-        for (int i = 0; i <= occupancy_rate + 1; i++) {
-            printf(" %d ", rrn_list[i]);
         }
     }
 }
@@ -85,8 +67,8 @@ BT_node_t * overflow_atualizing_Node(BT_node_t * tree_node, Overflow_block * inf
      int inicial_overflowList_id, int information_limit){
     
     //PRINT PARA DEBUGAR;
-    printf("ANTES:\n");
-    print_node(tree_node);
+    //printf("ANTES:\n");
+    //print_node(tree_node);
     
     int access_counter = 0;
     
@@ -120,8 +102,8 @@ BT_node_t * overflow_atualizing_Node(BT_node_t * tree_node, Overflow_block * inf
     }
     
     //PRINT PARA DEBUGAR;
-    printf("DEPOIS:\n");
-    print_node(tree_node);
+    //printf("DEPOIS:\n");
+    //print_node(tree_node);
     
     return tree_node;
 }
@@ -160,7 +142,7 @@ Overflow_block * create_oveflowBlock_3Nodes(BT_key father_key, BT_node_t * inser
     
     info_block->list_len = 2 + insertion_node->occupancy_rate + sister_node->occupancy_rate;
     
-    printf("TAMANHO ALOCADO PARA LISTA : %d\n", info_block->list_len);
+    //printf("TAMANHO ALOCADO PARA LISTA : %d\n", info_block->list_len);
     
     info_block->key_list = (BT_key *) malloc(sizeof(BT_key) * info_block->list_len);
     assert(info_block->key_list);
@@ -298,13 +280,13 @@ BT_node_t * key_redistribuition_decision(BT_node_t * father_node, int overflowed
     // the redistribuition.
     
     if(node_buffer_left != NULL && node_buffer_left->occupancy_rate < TREE_ORDER - 1){
-        printf("\nESCOLHEU IRMA DA ESQUERDA - RRN : %d\n", father_node->descendants_RRN[sister_rrn_id]);
+        //printf("\nESCOLHEU IRMA DA ESQUERDA - RRN : %d\n", father_node->descendants_RRN[sister_rrn_id]);
         if(node_buffer_right != NULL) bt_node_delete(&node_buffer_right);
         *direction = LEFT;
         return node_buffer_left;
         
     }else if(node_buffer_right != NULL && node_buffer_right->occupancy_rate < TREE_ORDER - 1){
-        printf("\nESCOLHEU IRMA DA DIREITA - RRN : %d\n", father_node->descendants_RRN[sister_rrn_id]);
+        //printf("\nESCOLHEU IRMA DA DIREITA - RRN : %d\n", father_node->descendants_RRN[sister_rrn_id]);
         if(node_buffer_left != NULL) bt_node_delete(&node_buffer_left);
         *direction = RIGHT;
         return node_buffer_right;
@@ -346,13 +328,13 @@ BT_node_t * node_Split2_3_decision(BT_node_t * father_node, int overflowed_RRN_i
     // deciding which of the nodes, or none of them, will be targeted by
     // the redistribuition.
     if(node_buffer_right != NULL){
-        printf("\nESCOLHEU IRMA DA direita - RRN : %d\n", father_node->descendants_RRN[sister_rrn_id]);
+        //printf("\nESCOLHEU IRMA DA direita - RRN : %d\n", father_node->descendants_RRN[sister_rrn_id]);
         if(node_buffer_left != NULL) bt_node_delete(&node_buffer_left);
         *direction = RIGHT;
         return node_buffer_right;
         
     }else if(node_buffer_left != NULL){
-        printf("\nESCOLHEU IRMA DA esquerda - RRN : %d\n", father_node->descendants_RRN[sister_rrn_id]);
+        //printf("\nESCOLHEU IRMA DA esquerda - RRN : %d\n", father_node->descendants_RRN[sister_rrn_id]);
         if(node_buffer_right != NULL) bt_node_delete(&node_buffer_right);
         *direction = LEFT;
         return node_buffer_left;

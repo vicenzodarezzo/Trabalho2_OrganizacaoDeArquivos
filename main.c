@@ -81,8 +81,7 @@ int main(int argc, char ** argv){
             insert_into(f_data, f_index, index_field, n_executions, data_header);
 
             fseek(f_data, 0, SEEK_SET);
-
-            s(f_data, '1', data_header);
+            data_file_settingHeader(f_data, '1', data_header);
             header_delete(&data_header);
             
             fclose(f_data);

@@ -184,6 +184,6 @@ int key_binary_search(BT_key * list, int inicial_id, int final_id, int filter_va
  *
  */
 
-void bTree_id_insertion(BTree * tree, BT_key key);
+int bTree_id_insertion(BTree * tree, BT_key key);
 
 #endif /* bTree_index_h */

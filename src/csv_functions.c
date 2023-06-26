@@ -172,47 +172,44 @@ void insert_into(FILE * data_file, FILE * index_file, char * index_name, int n_e
     bool index_flag; //used to determine if the inserted crime has information on the indexed field
     char index_info[BUFSIZ];
 
+    fseek(data_file, data_header->proxByteOffset, SEEK_SET);
+    
     for(int i = 1; i <= n_executions; ++i){
         inserted_crime = Crime_insertion_input_reading(INDEX_IDENTIFIER, &index_flag, index_info);
-
-        crime_printing(inserted_crime);
 
         // the following tests consider that the index_info is the idCrime, so the inserted crime must have it
         if(!index_flag) {
             fprintf(stdout, "The inserted register does not have the indexed field -> NOT POSSIBLE TO INSERT INTO THE INDEX TREE\n");
             crime_liberate_dynamic_strings(&inserted_crime);
+            crime_delete(&inserted_crime);
             continue;
         }
 
+        // index insertion values setup
         int inserted_value = atoi(index_info);
-        printf("\n\n inserted value: %d\n", inserted_value);
-
-        // header reading:
-        fseek(data_file, 0, SEEK_SET);
-    
-        // ESSE É DESNECESSARIO SE A FUNCAO DE ATUALIZAR O STATUS DO ARQUIVO
-        // RETORNAR O HEADER ;
-
+        //printf("\n\n inserted value: %d\n", inserted_value);
         long long int inserted_byteOffset = data_header->proxByteOffset;
         
-        printf("BYTEOFFSET: %lld\n", inserted_byteOffset);
+        //printf("BYTEOFFSET: %lld\n", inserted_byteOffset);
         
         // insertion of the inserted crime into the index tree
         BT_key inserted_key;
         inserted_key.value = inserted_value;
         inserted_key.byteOffset = inserted_byteOffset;
-        bTree_id_insertion(tree, inserted_key);
+        bool index_insertion_success = bTree_id_insertion(tree, inserted_key);
 
-        // inserting the read crime into the binary file
-        long long int counter;
-        fseek(data_file, inserted_byteOffset, SEEK_SET);
-        counter = crime_bin_write(data_file, inserted_crime);
-        
-        // atualizing the information in the header registry
-        data_header->proxByteOffset = data_header->proxByteOffset + counter;
-        data_header->nRegFile = data_header->nRegFile + 1;
+        if(index_insertion_success) {
+            // inserting the read crime into the binary file
+            long long int counter;
+            counter = crime_bin_write(data_file, inserted_crime);
+            
+            // atualizing the information in the header registry
+            data_header->proxByteOffset = data_header->proxByteOffset + counter;
+            data_header->nRegFile = data_header->nRegFile + 1;
+        }
+        crime_liberate_dynamic_strings(&inserted_crime);
+        crime_delete(&inserted_crime);
     }
 
-    crime_delete(&inserted_crime);
     bTree_closing(&tree);
 }

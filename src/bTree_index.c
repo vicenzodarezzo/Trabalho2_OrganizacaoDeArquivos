@@ -104,6 +104,21 @@ void bTree_closing(BTree ** tree){
     b_tree_delete(tree);
 }
 
+BTree * bt_index_create(FILE * index_file) {
+    BTree * tree = b_tree_create();
+    tree->index_file = index_file;
+
+    tree->root = bt_node_create();
+    tree->header = bt_header_create();
+    tree->header->root_RRN = 0;
+    tree->header->prox_RRN = 1;
+
+    bt_header_write(tree->header, index_file);
+    bt_node_write(tree->root, index_file);
+
+    return tree;
+}
+
 // -----------------------------------
 // -----------------------------------
 /* READING FUNCTIONS */

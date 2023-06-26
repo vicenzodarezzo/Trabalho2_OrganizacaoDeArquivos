@@ -67,12 +67,7 @@ void data_file_settingHeader(FILE * data_file, char status, Header_t * header){
 void create_index(FILE * data_file, FILE * index_file, char * index_name, Header_t * data_header) {
 
     // binary tree index setup
-    BTree * tree = b_tree_create();
-    tree->index_file = index_file;
-    tree->root = bt_node_create();
-    tree->header = bt_header_create();
-    tree->header->root_RRN = 0;
-    tree->header->prox_RRN = 1;
+    BTree * tree = bt_index_create(index_file);
 
     // Checking the indexed value
     if(index_crimeField_pairing(index_name) != INDEX_IDENTIFIER){

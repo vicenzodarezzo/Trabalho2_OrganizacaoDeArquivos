@@ -89,6 +89,8 @@ void bt_node_delete(BT_node_t ** node);
 
 void bt_header_delete(BT_header_t ** header);
 
+BTree * bt_index_create(FILE * index_file);
+
 /**
  * Frees the memory associated to the tree pointer correctly and sets the header status to valid again in second
  * memory. It's valid to remember that the file stored in the registry is not closed by this function, that task is not in the

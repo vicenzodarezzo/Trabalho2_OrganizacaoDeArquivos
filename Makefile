@@ -1,5 +1,5 @@
 DEBUG = -g3 -fsanitize=address -Wall
-FLAGS = -std=c99 $(DEBUG)
+FLAGS = -std=c99 
 
 TEST_CASE = 1.in
 

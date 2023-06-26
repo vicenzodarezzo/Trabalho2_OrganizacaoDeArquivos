@@ -19,7 +19,7 @@ BT_header_t * bt_header_create(void){
     
     header->status = '0';
     header->root_RRN = -1;
-    header->prox_RRN = -1;
+    header->prox_RRN = 0;
     header->height = 0;
     header->n_indexed_keys = 0;
     
@@ -232,8 +232,8 @@ void bt_header_write(BT_header_t * h, FILE * src){
 void bt_node_write(BT_node_t * node, FILE * src){
     int counter = 0;
     
-    //printf("NO NA ESCRITA\n");
-    //print_node(node);
+    // printf("NO NA ESCRITA\n");
+    // print_node(node);
     
     counter += sizeof(int) * fwrite(&(node->level), sizeof(int), 1, src);
     counter += sizeof(int) * fwrite(&(node->occupancy_rate), sizeof(int), 1, src);
@@ -387,12 +387,11 @@ void key_sorted_insertion(BT_node_t * node, Insertion_block * block, FILE * inde
     // the first step in this case is to find where
     // the new key will be placed in the node
 
-    Path_running path;
-    int last_accessed_id;
+    Path_running path = LEFT;
+    int last_accessed_id = 0;
 
     int key_position;
 
-    //printf("\nNo 1:\n\n\n");
     //print_node(node);
 
     key_binary_search(node->keys, 0, node->occupancy_rate - 1,
@@ -698,16 +697,15 @@ Insertion_block * overflow_treatment( BTree * tree, BT_node_t * father_node,
      BT_node_t * overflowed_node, int father_RRN, int id_father_key,
      Insertion_block * insert_info){
     
-    int overflowed_RRN_id = id_father_key + (insert_info->key.value > father_node->keys[id_father_key].value);
     
-    
-    if(father_node->descendants_RRN[overflowed_RRN_id] == tree->header->root_RRN){
-        //printf("NO RAIZ -> SPLIT 1/2\n");
+    if(father_node == NULL) { 
+        // printf("NO RAIZ -> SPLIT 1/2\n");
         node_split1_2(overflowed_node, tree, insert_info);
         insert_info->key.value = -1;
         
     }else{
-        
+        int overflowed_RRN_id = id_father_key + (insert_info->key.value > father_node->keys[id_father_key].value);
+
         BT_node_t * sister_node;
         Path_running sister_direction;
         
@@ -746,7 +744,6 @@ void bTree_insertion_in_node(BTree * tree, BT_node_t * current_node, BT_node_t *
     
     
     if(tree->root->occupancy_rate == 0){
-        //printf("ARVORE VAZIA\n");
         // empty tree : insertion in the empty root
         key_sorted_insertion(tree->root, insertion_info, tree->index_file,
              tree->header->root_RRN);
@@ -754,7 +751,6 @@ void bTree_insertion_in_node(BTree * tree, BT_node_t * current_node, BT_node_t *
     }else{
         
         if(current_node->occupancy_rate < TREE_ORDER - 1){
-            //printf("INSERCAO ORDENADA NO NO\n");
             // there is space in the current node and it is a leaf, so, we insert the key
             key_sorted_insertion(current_node, insertion_info, tree->index_file, current_RRN);
             
@@ -777,9 +773,9 @@ bool bTree_recursion_insertion(BTree * tree, BT_node_t * current_node, int curre
     int new_key_id;
     Branching_value branch_result;
 
-    //printf("RRN ATUAL :: %d\n\n", current_RRN);
-    //print_node(current_node);
-    //printf("\n\n");
+    // printf("RRN ATUAL :: %d\n\n", current_RRN);
+    // print_node(current_node);
+    // printf("\n\n");
     branch_result = bTree_branching_through_node(current_node, block->key.value, &find_flag,
         &new_key_id);
     
@@ -834,7 +830,7 @@ bool bTree_id_insertion(BTree * tree, BT_key key) {
 
     block.key = key;
     block.right_RRN = -1;
-
+    
     if(tree->root->occupancy_rate == 0) {
         key_sorted_insertion(tree->root, &block, tree->index_file,
              tree->header->root_RRN);
@@ -843,5 +839,5 @@ bool bTree_id_insertion(BTree * tree, BT_key key) {
         return true;
     }
     
-    return bTree_recursion_insertion(tree, tree->root, tree->header->root_RRN, NULL, -1, -1, &block);
+    return bTree_recursion_insertion(tree, tree->root, tree->header->root_RRN, NULL, -1, 0, &block);
 }

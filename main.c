@@ -42,7 +42,7 @@ int main(int argc, char ** argv){
                 exit(0);
             }
 
-            // REDING THE HEADERS AND ASSERTING THE STATUS :
+            // READING THE HEADER AND ASSERTING THE STATUS :
 
             data_header = header_create();
             header_reading(f_data, data_header);
@@ -50,8 +50,7 @@ int main(int argc, char ** argv){
 
             create_index(f_data, f_index, index_field, data_header);
 
-            fseek(f_data, 0, SEEK_SET);
-            data_file_settingHeader(f_data, '1', data_header);
+            data_file_settingStatus(f_data, '1');
             header_delete(&data_header);
             
             fclose(f_data);
@@ -82,7 +81,6 @@ int main(int argc, char ** argv){
             
             select_from(f_data, f_index, index_field, n_executions);
 
-            fseek(f_data, 0, SEEK_SET);
             data_file_settingStatus(f_data, '1');
             
             fclose(f_data);
@@ -117,7 +115,6 @@ int main(int argc, char ** argv){
 
             insert_into(f_data, f_index, index_field, n_executions, data_header);
 
-            fseek(f_data, 0, SEEK_SET);
             data_file_settingHeader(f_data, '1', data_header);
             header_delete(&data_header);
             

@@ -78,19 +78,20 @@ void create_index(FILE * data_file, FILE * index_file, char * index_name, Header
     // creating the auxiliary crime variables used to store and insert the crime from the database
     Crime_t * inserted_crime = crime_create();
 
-    // calculating the number of crimes to be inserted into the index from file header
-    int n_insertions = data_header->nRegFile - data_header->nRegRem;
-
-    // jumping to the first crime on the database
-    fseek(data_file, sizeof(Header_t), SEEK_SET);
+    // setting the byteOffset to the first crime on the database
     long long int current_byteOffset = sizeof(Header_t);
 
     // insertion loop, assumes every crime has the indexed value idCrime
-    int inserted_crime_size;
-    for(int i = 1; i <= n_insertions; ++i) {
+    long long int inserted_crime_size;
+    for(int i = 1; i <= data_header->nRegFile; ++i) {
+
+        //printf("CRIME %d\n", i);
         inserted_crime_size = crime_reading(data_file, inserted_crime);
 
-        if(inserted_crime->removed == 1) { // if it was removed, it must not be inserted into the index file
+        //crime_printing(inserted_crime);
+
+        if(inserted_crime->removed == 1) { 
+            // if it was removed, it must not be inserted into the index file
             crime_liberate_dynamic_strings(&inserted_crime);
             current_byteOffset += inserted_crime_size;
             continue;

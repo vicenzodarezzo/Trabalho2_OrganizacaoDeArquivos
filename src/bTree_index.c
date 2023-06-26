@@ -834,6 +834,14 @@ bool bTree_id_insertion(BTree * tree, BT_key key) {
 
     block.key = key;
     block.right_RRN = -1;
+
+    if(tree->root->occupancy_rate == 0) {
+        key_sorted_insertion(tree->root, &block, tree->index_file,
+             tree->header->root_RRN);
+            
+        tree->header->n_indexed_keys = tree->header->n_indexed_keys + 1;
+        return true;
+    }
     
     return bTree_recursion_insertion(tree, tree->root, tree->header->root_RRN, NULL, -1, -1, &block);
 }

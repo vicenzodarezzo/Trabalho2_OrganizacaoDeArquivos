@@ -38,7 +38,7 @@ BT_node_t * bt_node_create(void){
     node->level = 0;
     node->occupancy_rate = 0;
     
-    // inicializing all the node information with -1 = NILL value ;
+    // inicializing all the node information with -1 ;
     for (int i = 0; i < TREE_ORDER - 1; i++){
         node->keys[i].value = -1;
         node->keys[i].byteOffset = -1;
@@ -101,12 +101,7 @@ void bTree_closing(BTree ** tree){
     fseek(t->index_file, 0, SEEK_SET);
     bt_header_write(t->header, t->index_file);
     
-    bt_node_delete(&(t->root));
-    bt_header_delete(&(t->header));
-    
-    free(t);
-    t = NULL;
-    
+    b_tree_delete(tree);
 }
 
 // -----------------------------------
@@ -819,7 +814,7 @@ bool bTree_recursion_insertion(BTree * tree, BT_node_t * current_node, int curre
     }
 }
 
-int bTree_id_insertion(BTree * tree, BT_key key) {
+bool bTree_id_insertion(BTree * tree, BT_key key) {
     Insertion_block block;
 
     block.key = key;

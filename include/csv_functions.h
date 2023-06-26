@@ -9,6 +9,7 @@
 #define csv_functions_h
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "inputOutput.h"
 
 // -------------------------------------------------
@@ -30,6 +31,7 @@ void data_file_settingHeader(FILE * data_file, char status, Header_t * header);
 //--------------------------------------------------
 //--------------------------------------------------
 
+void create_index(FILE * data_file, FILE * index_file, char * index_name, Header_t * data_header);
 
 // -------------------------------------------------
 // -------------------------------------------------

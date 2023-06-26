@@ -9,6 +9,7 @@
 #define overflow_management_h
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "bTree_index.h"
 
 typedef struct overflow_lists{

@@ -1,7 +1,7 @@
 DEBUG = -g3 -fsanitize=address -Wall
-FLAGS = -std=c99 
+FLAGS = -std=c99 $(DEBUG)
 
-TEST_CASE = 4.in
+TEST_CASE = 1.in
 
 OBJECTS = bTree_index.o registers.o inputOutput.o overflow_management.o csv_functions.o main.o
 BIN = main

@@ -9,8 +9,6 @@
 # include <assert.h>
 # include <string.h>
 
-
-
 // CONVENTIONS:
 
 /* Variabel lenght register, delimited by '#' */

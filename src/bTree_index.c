@@ -229,9 +229,6 @@ void bt_header_write(BT_header_t * h, FILE * src){
 void bt_node_write(BT_node_t * node, FILE * src){
     int counter = 0;
     
-    // printf("NO NA ESCRITA\n");
-    // print_node(node);
-    
     counter += sizeof(int) * fwrite(&(node->level), sizeof(int), 1, src);
     counter += sizeof(int) * fwrite(&(node->occupancy_rate), sizeof(int), 1, src);
     
@@ -244,13 +241,10 @@ void bt_node_write(BT_node_t * node, FILE * src){
     
     counter += sizeof(int) * fwrite(&node->descendants_RRN[TREE_ORDER - 1], sizeof(int), 1, src);
     
-    //printf("\n\nCOUNTER : %d \n\n", counter);
-    
     // filling the remaining disk page space
     char c = TRASH_IDENTIFIER ;
     for(int i = DISK_PAGE_SIZE - counter; i > 0; i--) fwrite(&c, sizeof(char), 1, src);
-    
-    //printf("\n\nCOUNTER FINAL : %d \n\n", counter);
+
 }
 
 // -----------------------------------
@@ -258,12 +252,6 @@ void bt_node_write(BT_node_t * node, FILE * src){
 /* SEARCH FUNCTIONS */
 // -----------------------------------
 // -----------------------------------
-
-
-/* This function is responsible for running the key list as a tree, returning the id
-of the list where the filter value is contained, if it is. In the other case, returns NILL.
-The information stored in the last_id and path will be used in the heuristic for propagate
-the search over the tree. */
 
 int key_binary_search(BT_key * list, int inicial_id, int final_id, int filter_value, int * last_id, Path_running * path){
 
@@ -382,11 +370,7 @@ long long int bTree_id_search(FILE * index_file, BT_node_t * node, int filter_va
  *  --> split 2 - 3
  */
 
-// ASSUMINDO QUE O BLOCO TEM NO MAX FILHO SOMENTE NA DIREITA
-
-
-//Essa funcao esta assumindo que o inserted block ja contem o filho ou setado para o
-//ponteiro propagado ou setado para -1;
+//
 
 void key_sorted_insertion(BT_node_t * node, Insertion_block * block, FILE * index_file,
      int insertion_RRN){
@@ -399,15 +383,11 @@ void key_sorted_insertion(BT_node_t * node, Insertion_block * block, FILE * inde
 
     int key_position;
 
-    print_node(node);
-
     key_binary_search(node->keys, 0, node->occupancy_rate - 1,
         block->key.value, &last_accessed_id, &path);
     
     // the last_accessed_id + path represents where the key will be placed
     key_position = ((path == LEFT) ? last_accessed_id : last_accessed_id + 1);
-
-    printf("\nkey position : %d\n", key_position);
 
     // now that the position is obtained, we have to obtain the space
     // in the node for this insertion. For this, we will shift all
@@ -425,14 +405,9 @@ void key_sorted_insertion(BT_node_t * node, Insertion_block * block, FILE * inde
     node->occupancy_rate = node->occupancy_rate + 1;
     
     // writing the node in secondary memory:
-    
-    printf("RRN DE ESCRITA: %d \n", insertion_RRN);
     fseek(index_file, (insertion_RRN + 1) * DISK_PAGE_SIZE, SEEK_SET);
     
     bt_node_write(node, index_file);
-
-    printf("\nno dps:\n\n\n");
-    print_node(node);
 
     // emptying the insertion block
     block->key.value = -1;
@@ -447,33 +422,15 @@ void key_sorted_insertion(BT_node_t * node, Insertion_block * block, FILE * inde
     O id da chave pai dentro do nó pai, obtida na recursão
 */
 
-// JA DESALOCA O SISTER NODE POIS ELE NECESSARIAMENTE NAO SERA MAIS UTILIZADO AO FINAL DA OPERAÇÃO;
-
 void key_redistribuition(BT_node_t * father_node, BT_node_t * insertion_node,
      BT_node_t * sister_node, int id_father_key, Insertion_block * block,
      Path_running sisterPage_direction, FILE * index_file, int father_RRN){
     
     Overflow_block * info_block;
     
-    printf("ID father key %d -> %d", id_father_key, father_node->keys[id_father_key].value);
-    
-    printf("\nANTES\n");
-    printf("\t p : \n");
-    print_node(father_node);
-    printf("\t i : \n");
-    print_node(insertion_node);
-    printf("\t s : \n");
-    print_node(sister_node);
-    
     // CREATING THE REDISTRIBUITION STRUCTURE : keys and pointers lists
-    
     info_block = create_oveflowBlock_3Nodes(father_node->keys[id_father_key],
          insertion_node, sister_node, block, sisterPage_direction);
-    printf("LISTA : ");
-    for (int i = 0; i < info_block->list_len; i++) {
-        printf(" %d ", info_block->key_list[i].value);
-    }
-    printf("\n");
     
     // ATUALIZING THE NODES
     
@@ -503,15 +460,6 @@ void key_redistribuition(BT_node_t * father_node, BT_node_t * insertion_node,
              info_block->ascended_id[0] + 1, info_block->list_len);
     }
     
-    printf("\nDEPOIS\n");
-    printf("\t p : \n");
-    print_node(father_node);
-    printf("\t i : \n");
-    print_node(insertion_node);
-    printf("\t s : \n");
-    print_node(sister_node);
-    
-    
     // CLEANING THE AUXILIARY STRUCTURES
     
     free(info_block->key_list);
@@ -539,10 +487,6 @@ void key_redistribuition(BT_node_t * father_node, BT_node_t * insertion_node,
     
     fseek(index_file, (father_RRN + 1) * DISK_PAGE_SIZE, SEEK_SET);
     bt_node_write(father_node, index_file);
-
-    print_node(father_node);
-    print_node(insertion_node);
-    print_node(sister_node);
     
     // LIBERATING THE ADRESSED MEMORY
     
@@ -593,22 +537,17 @@ Insertion_block * node_split2_3(BT_node_t * father_node, BT_node_t * insertion_n
     sister_node->occupancy_rate = 0;
     
     if(sisterPage_direction == RIGHT){
-        //printf("\n\n insertion node \n\n");
         insertion_node = overflow_atualizing_Node(insertion_node, info_block, 0,
              info_block->ascended_id[0]);
-        //printf("\n\n sister node \n\n");
         sister_node = overflow_atualizing_Node(sister_node, info_block,
             info_block->ascended_id[0] + 1, info_block->ascended_id[1]);
         
     }else{
-        //printf("\n\n sister node \n\n");
         sister_node = overflow_atualizing_Node(sister_node, info_block, 0,
              info_block->ascended_id[0]);
-        //printf("\n\n insertion node \n\n");
         insertion_node = overflow_atualizing_Node(insertion_node, info_block,
              info_block->ascended_id[0] + 1, info_block->ascended_id[1]);
     }
-    //printf("\n\n new node \n\n");
     new_node = overflow_atualizing_Node(new_node, info_block, info_block->ascended_id[1] + 1,
              info_block->list_len);
     
@@ -632,22 +571,16 @@ Insertion_block * node_split2_3(BT_node_t * father_node, BT_node_t * insertion_n
         sister_RRN = father_node->descendants_RRN[id_father_key];
         insertion_RRN = father_node->descendants_RRN[id_father_key + 1];
     }
-    
-    printf("\n\nESCRITA\n\n");
-    
-    printf("INSERTION RRN : %d \n", insertion_RRN);
+
     fseek(index_file, (insertion_RRN + 1) * DISK_PAGE_SIZE, SEEK_SET);
     bt_node_write(insertion_node, index_file);
     
-    printf("SISTER RRN : %d \n", sister_RRN);
     fseek(index_file, (sister_RRN + 1) * DISK_PAGE_SIZE, SEEK_SET);
     bt_node_write(sister_node, index_file);
     
-    printf("NEW RRN : %d \n", new_RRN);
     fseek(index_file, (new_RRN + 1) * DISK_PAGE_SIZE, SEEK_SET);
     bt_node_write(new_node, index_file);
     
-    printf("FATHER RRN : %d \n", father_RRN);
     fseek(index_file, (father_RRN + 1) * DISK_PAGE_SIZE, SEEK_SET);
     bt_node_write(father_node, index_file);
     
@@ -721,10 +654,6 @@ void node_split1_2(BT_node_t * root_node, BTree * tree, Insertion_block * block)
     bt_node_write(sister_node, index_file);
     
     // LIBERATING THE ADRESSED MEMORY
-    
-    print_node(new_root);
-    print_node(root_node);
-    print_node(sister_node);
 
     bt_node_delete(&sister_node);
 
@@ -738,7 +667,6 @@ Insertion_block * overflow_treatment( BTree * tree, BT_node_t * father_node,
     
     
     if(overflowed_node->level == tree->root->level) { 
-        printf("NO RAIZ -> SPLIT 1/2\n");
         node_split1_2(overflowed_node, tree, insert_info);
         insert_info->key.value = -1;
         
@@ -752,7 +680,6 @@ Insertion_block * overflow_treatment( BTree * tree, BT_node_t * father_node,
             tree->index_file, &sister_direction, &id_father_key);
         
         if(sister_node != NULL){
-            printf("-> REDST.\n");
             key_redistribuition(father_node, overflowed_node, sister_node, id_father_key,
                  insert_info, sister_direction, tree->index_file, father_RRN);
             insert_info->key.value = -1;
@@ -761,7 +688,6 @@ Insertion_block * overflow_treatment( BTree * tree, BT_node_t * father_node,
             insert_info->key.value = -1;
             
         }else{
-            printf(" -> SPLIT 2/3\n");
             sister_node = node_Split2_3_decision(father_node, overflowed_RRN_id,
                  tree->index_file, &sister_direction, &id_father_key);
             
@@ -790,12 +716,11 @@ void bTree_insertion_in_node(BTree * tree, BT_node_t * current_node, BT_node_t *
     }else{
         
         if(current_node->occupancy_rate < TREE_ORDER - 1){
-            // there is space in the current node and it is a leaf, so, we insert the key
+            // there is space in the current node and it is a leaf, so we insert the key
             key_sorted_insertion(current_node, insertion_info, tree->index_file, current_RRN);
             
         }else{
-            printf("OVERFLOW\n");
-
+            // there is no space left in the current node, so we have to execute a overflow treatment method
             insertion_info = overflow_treatment(tree, father_node, current_node, father_RRN,
                 id_father_key, insertion_info);
         }
@@ -812,12 +737,9 @@ bool bTree_recursion_insertion(BTree * tree, BT_node_t * current_node, int curre
     int new_key_id;
     Branching_value branch_result;
 
-    printf("RRN ATUAL :: %d\n\n", current_RRN);
-    print_node(current_node);
-    printf("\n\n");
     branch_result = bTree_branching_through_node(current_node, block->key.value, &find_flag,
         &new_key_id);
-    printf("NEW KEY ID RETORNADO : %d\n", new_key_id);
+
     if(find_flag){
         fprintf(stdout, " %d THE INSERTED KEY ALREADY EXISTS IN TREE\n", block->key.value);
         return false;
@@ -852,8 +774,6 @@ bool bTree_recursion_insertion(BTree * tree, BT_node_t * current_node, int curre
             return success;
             
         }else{
-            printf("ACHOU O NÓ DE INSERCAO\n");
-        
             bTree_insertion_in_node(tree, current_node, last_node,
                last_node_RRN, current_RRN, last_key_id, block);
             

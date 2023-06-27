@@ -84,11 +84,8 @@ void create_index(FILE * data_file, FILE * index_file, char * index_name, Header
     // insertion loop, assumes every crime has the indexed value idCrime
     long long int inserted_crime_size;
     for(int i = 1; i <= data_header->nRegFile; ++i) {
-
-        printf("CRIME %d\n", i);
+        
         inserted_crime_size = crime_reading(data_file, inserted_crime);
-
-        crime_printing(inserted_crime);
 
         if(inserted_crime->removed == 1) { 
             // if it was removed, it must not be inserted into the index file

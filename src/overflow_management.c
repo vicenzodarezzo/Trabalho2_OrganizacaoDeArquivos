@@ -66,10 +66,6 @@ Overflow_block * overflow_inicializing_interval(Overflow_block * info_block,
 BT_node_t * overflow_atualizing_Node(BT_node_t * tree_node, Overflow_block * info_block,
      int inicial_overflowList_id, int information_limit){
     
-    //PRINT PARA DEBUGAR;
-    //printf("ANTES:\n");
-    //print_node(tree_node);
-    
     int access_counter = 0;
     
     // rebooting the occupancy rate in order to atualize the page
@@ -100,10 +96,6 @@ BT_node_t * overflow_atualizing_Node(BT_node_t * tree_node, Overflow_block * inf
         access_counter++;
         
     }
-    
-    //PRINT PARA DEBUGAR;
-    //printf("DEPOIS:\n");
-    //print_node(tree_node);
     
     return tree_node;
 }
@@ -141,8 +133,6 @@ Overflow_block * create_oveflowBlock_3Nodes(BT_key father_key, BT_node_t * inser
     assert(info_block);
     
     info_block->list_len = 2 + insertion_node->occupancy_rate + sister_node->occupancy_rate;
-    
-    //printf("TAMANHO ALOCADO PARA LISTA : %d\n", info_block->list_len);
     
     info_block->key_list = (BT_key *) malloc(sizeof(BT_key) * info_block->list_len);
     assert(info_block->key_list);
@@ -204,7 +194,6 @@ Overflow_block * create_oveflowBlock_1Node(BT_node_t * insertion_node, Insertion
     // for searching
     Path_running path;
     int last_accessed_id;
-    //int b_search_return;
 
     // building the list
     info_block = (Overflow_block *) malloc(sizeof(Overflow_block));
@@ -284,7 +273,7 @@ BT_node_t * key_redistribuition_decision(BT_node_t * father_node, int overflowed
     // the redistribuition.
     
     if(node_buffer_left != NULL && node_buffer_left->occupancy_rate < TREE_ORDER - 1){
-        //printf("\nESCOLHEU IRMA DA ESQUERDA - RRN : %d\n", father_node->descendants_RRN[sister_rrn_id]);
+
         if(node_buffer_right != NULL) bt_node_delete(&node_buffer_right);
         *direction = LEFT;
         
@@ -295,9 +284,10 @@ BT_node_t * key_redistribuition_decision(BT_node_t * father_node, int overflowed
         return node_buffer_left;
         
     }else if(node_buffer_right != NULL && node_buffer_right->occupancy_rate < TREE_ORDER - 1){
-        //printf("\nESCOLHEU IRMA DA DIREITA - RRN : %d\n", father_node->descendants_RRN[sister_rrn_id]);
+
         if(node_buffer_left != NULL) bt_node_delete(&node_buffer_left);
         *direction = RIGHT;
+
         // checking if we have to change the father_id :
         if(right_sister_rrn_id > *father_key_id + 1){
             *father_key_id = *father_key_id + 1 ;
@@ -342,7 +332,6 @@ BT_node_t * node_Split2_3_decision(BT_node_t * father_node, int overflowed_RRN_i
     // deciding which of the nodes, or none of them, will be targeted by
     // the redistribuition.
     if(node_buffer_right != NULL){
-        //printf("\nESCOLHEU IRMA DA direita - RRN : %d\n", father_node->descendants_RRN[sister_rrn_id]);
         if(node_buffer_left != NULL) bt_node_delete(&node_buffer_left);
         *direction = RIGHT;
         
@@ -353,7 +342,6 @@ BT_node_t * node_Split2_3_decision(BT_node_t * father_node, int overflowed_RRN_i
         return node_buffer_right;
         
     }else if(node_buffer_left != NULL){
-        //printf("\nESCOLHEU IRMA DA esquerda - RRN : %d\n", father_node->descendants_RRN[sister_rrn_id]);
         if(node_buffer_right != NULL) bt_node_delete(&node_buffer_right);
         *direction = LEFT;
         
@@ -371,5 +359,3 @@ BT_node_t * node_Split2_3_decision(BT_node_t * father_node, int overflowed_RRN_i
         return NULL;
     }
 }
-
-

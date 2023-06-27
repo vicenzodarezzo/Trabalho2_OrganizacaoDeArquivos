@@ -1,5 +1,5 @@
 DEBUG = -g3 -fsanitize=address -Wall
-FLAGS = -std=c99 
+FLAGS = -std=c99 $(DEBUG)
 
 TEST_CASE = 1.in
 
@@ -37,4 +37,4 @@ run_test:
 	make run < $(TEST_CASE)
 
 clean_test:
-	rm *.in *.out *.bin
+	rm *.in *.out *.bin *.zip

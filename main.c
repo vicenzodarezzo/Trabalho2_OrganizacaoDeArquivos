@@ -50,7 +50,7 @@ int main(int argc, char ** argv){
 
             create_index(f_data, f_index, index_field, data_header);
 
-            data_file_settingStatus(f_data, '1');
+            data_file_settingHeader(f_data, '1', data_header);
             header_delete(&data_header);
             
             fclose(f_data);

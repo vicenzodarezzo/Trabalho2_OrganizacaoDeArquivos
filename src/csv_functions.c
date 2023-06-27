@@ -79,16 +79,16 @@ void create_index(FILE * data_file, FILE * index_file, char * index_name, Header
     Crime_t * inserted_crime = crime_create();
 
     // setting the byteOffset to the first crime on the database
-    long long int current_byteOffset = sizeof(Header_t);
+    long long int current_byteOffset = 17; // header size
 
     // insertion loop, assumes every crime has the indexed value idCrime
     long long int inserted_crime_size;
     for(int i = 1; i <= data_header->nRegFile; ++i) {
 
-        //printf("CRIME %d\n", i);
+        printf("CRIME %d\n", i);
         inserted_crime_size = crime_reading(data_file, inserted_crime);
 
-        //crime_printing(inserted_crime);
+        crime_printing(inserted_crime);
 
         if(inserted_crime->removed == 1) { 
             // if it was removed, it must not be inserted into the index file

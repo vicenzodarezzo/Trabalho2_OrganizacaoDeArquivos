@@ -301,6 +301,155 @@ BT_node_t * key_redistribuition_decision(BT_node_t * father_node, int overflowed
     }
 }
 
+/* RECEBE:
+    Os nós lidos em memória primária
+    A página irmã decidida conforme a funcão acima implementada
+    O bloco a ser inserido (Insertion Block)
+    A informação sobre a direção da página Irmã
+    O id da chave pai dentro do nó pai, obtida na recursão
+*/
+
+void key_redistribuition(BT_node_t * father_node, BT_node_t * insertion_node,
+     BT_node_t * sister_node, int id_father_key, Insertion_block * block,
+     Path_running sisterPage_direction, FILE * index_file, int father_RRN){
+    
+    Overflow_block * info_block;
+    
+    // CREATING THE REDISTRIBUITION STRUCTURE : keys and pointers lists
+    info_block = create_oveflowBlock_3Nodes(father_node->keys[id_father_key],
+         insertion_node, sister_node, block, sisterPage_direction);
+    
+    // ATUALIZING THE NODES
+    
+    // calculating the mid_value of the list
+    info_block->ascended_id[0] = info_block->list_len / 2 ;
+    
+    // switching the father key with the ascended one in the key list;
+    father_node->keys[id_father_key] = info_block->key_list[info_block->ascended_id[0]];
+   
+    insertion_node->occupancy_rate = 0;
+    sister_node->occupancy_rate = 0;
+    
+    if(sisterPage_direction == RIGHT){ // the case where the insertion page is lower than the sister_page ;
+        
+        insertion_node = overflow_atualizing_Node(insertion_node, info_block, 0,
+             info_block->ascended_id[0]);
+        
+        sister_node = overflow_atualizing_Node(sister_node, info_block,
+             info_block->ascended_id[0] + 1, info_block->list_len);
+        
+    }else{ // the case where the insertion page is greater than the sister_page ;
+        
+        sister_node = overflow_atualizing_Node(sister_node, info_block, 0,
+             info_block->ascended_id[0]);
+        
+        insertion_node = overflow_atualizing_Node(insertion_node, info_block,
+             info_block->ascended_id[0] + 1, info_block->list_len);
+    }
+    
+    // CLEANING THE AUXILIARY STRUCTURES
+    
+    free(info_block->key_list);
+    free(info_block->rrn_list);
+    free(info_block);
+    info_block = NULL;
+    
+    // WRITING IN SECONDARY MEMORY
+    int insertion_RRN;
+    int sister_RRN;
+    
+    if(sisterPage_direction == RIGHT){
+        insertion_RRN = father_node->descendants_RRN[id_father_key];
+        sister_RRN = father_node->descendants_RRN[id_father_key + 1];
+    }else{
+        sister_RRN = father_node->descendants_RRN[id_father_key];
+        insertion_RRN = father_node->descendants_RRN[id_father_key + 1];
+    }
+    
+    fseek(index_file, (insertion_RRN + 1) * DISK_PAGE_SIZE, SEEK_SET);
+    bt_node_write(insertion_node, index_file);
+    
+    fseek(index_file, (sister_RRN + 1) * DISK_PAGE_SIZE, SEEK_SET);
+    bt_node_write(sister_node, index_file);
+    
+    fseek(index_file, (father_RRN + 1) * DISK_PAGE_SIZE, SEEK_SET);
+    bt_node_write(father_node, index_file);
+    
+    // LIBERATING THE ADRESSED MEMORY
+    
+    bt_node_delete(&sister_node);
+}
+
+// ------------------------------
+// ------------------------------
+// SPLIT 1 - 2
+// ------------------------------
+// ------------------------------
+
+void node_split1_2(BT_node_t * root_node, BTree * tree, Insertion_block * block){
+    
+    FILE * index_file;
+    index_file = tree->index_file;
+    
+    // creating the Overflow structure to store all the nodes information ;
+    Overflow_block * info_block = create_oveflowBlock_1Node(root_node, * block);
+
+    // calculating the mid_value of the list
+    info_block->ascended_id[0] = info_block->list_len / 2 ;
+    
+    // creating new nodes that are generated in this split 
+    BT_node_t * new_root = bt_node_create();
+    BT_node_t * sister_node = bt_node_create();
+    
+    int previous_root_RRN = tree->header->root_RRN;
+    
+    int new_sister_RRN = (tree->header->prox_RRN)++;
+    
+    int new_root_RRN = (tree->header->prox_RRN)++;
+    
+    sister_node->level = root_node->level;
+    new_root->level = root_node->level + 1;
+    
+    // atualizing tree information
+    tree->root = new_root;
+    tree->header->root_RRN = new_root_RRN;
+    tree->header->height = tree->header->height + 1;
+    
+    // atualizing information in the nodes
+    root_node = overflow_atualizing_Node(root_node, info_block, 0, info_block->ascended_id[0]);
+    
+    sister_node = overflow_atualizing_Node(sister_node, info_block, info_block->ascended_id[0] + 1, 
+                    info_block->list_len);
+    
+    // NEW ROOT:
+    new_root->occupancy_rate = 1;
+    new_root->keys[0] = info_block->key_list[info_block->ascended_id[0]];
+    new_root->descendants_RRN[0] = previous_root_RRN;
+    new_root->descendants_RRN[1] = new_sister_RRN;
+    
+    // CLEANING THE AUXILIARY STRUCTURES
+    free(info_block->key_list);
+    free(info_block->rrn_list);
+    free(info_block);
+    info_block = NULL;
+    
+    // WRITING IN SECONDARY MEMORY
+    fseek(index_file, (new_root_RRN + 1) * DISK_PAGE_SIZE, SEEK_SET);
+    bt_node_write(new_root, index_file);
+    
+    fseek(index_file, (previous_root_RRN + 1) * DISK_PAGE_SIZE, SEEK_SET);
+    bt_node_write(root_node, index_file);
+    
+    fseek(index_file, (new_sister_RRN + 1) * DISK_PAGE_SIZE, SEEK_SET);
+    bt_node_write(sister_node, index_file);
+    
+    // LIBERATING THE ADRESSED MEMORY
+
+    bt_node_delete(&sister_node);
+
+    // emptying the insertion block
+    block->key.value = -1;
+}
 
 // ------------------------------
 // ------------------------------
@@ -358,4 +507,106 @@ BT_node_t * node_Split2_3_decision(BT_node_t * father_node, int overflowed_RRN_i
         fprintf(stdout, "NENHUM PONTEIRO DISPONIVEL : FALHA NO SPLIT DECISION\n");
         return NULL;
     }
+}
+
+Insertion_block * node_split2_3(BT_node_t * father_node, BT_node_t * insertion_node,
+     BT_node_t * sister_node, int id_father_key, Insertion_block * block,
+     Path_running sisterPage_direction, BTree * tree, int father_RRN){
+    
+    Overflow_block * info_block;
+    int new_RRN;
+    FILE * index_file = tree->index_file;
+    
+    // CREATING THE SPLIT STRUCTURE : keys and pointers lists
+    
+    info_block = create_oveflowBlock_3Nodes(father_node->keys[id_father_key],
+         insertion_node, sister_node, block, sisterPage_direction);
+    
+    // calculating the third_value of the list
+    info_block->ascended_id[0] = info_block->list_len / 3 ;
+    info_block->ascended_id[1] = 2 * info_block->list_len / 3  + 1;
+    
+    // CREATING THE NEW NODE IN MAIN MEMORY
+    BT_node_t * new_node = bt_node_create();
+    
+    new_node->level = insertion_node->level;
+    new_node->occupancy_rate = 0;
+    new_RRN = tree->header->prox_RRN;
+    
+    // Atualizing the next RRN in the tree ;
+    tree->header->prox_RRN = tree->header->prox_RRN + 1;
+    
+    // ASCENDING THE PROPAGATED NODES
+    
+    // -> the first node ascended will be exchanged with the father key
+    father_node->keys[id_father_key] =
+    info_block->key_list[info_block->ascended_id[0]];
+    
+    // -> the second node will be propageted in the tree recursion;
+    block->key = info_block->key_list[info_block->ascended_id[1]];
+    block->right_RRN = new_RRN;
+    
+    // ATUALIZING THE INSERTION LEVEL NODES
+    
+    insertion_node->occupancy_rate = 0;
+    sister_node->occupancy_rate = 0;
+    
+    if(sisterPage_direction == RIGHT){
+        insertion_node = overflow_atualizing_Node(insertion_node, info_block, 0,
+             info_block->ascended_id[0]);
+        sister_node = overflow_atualizing_Node(sister_node, info_block,
+            info_block->ascended_id[0] + 1, info_block->ascended_id[1]);
+        
+    }else{
+        sister_node = overflow_atualizing_Node(sister_node, info_block, 0,
+             info_block->ascended_id[0]);
+        insertion_node = overflow_atualizing_Node(insertion_node, info_block,
+             info_block->ascended_id[0] + 1, info_block->ascended_id[1]);
+    }
+    new_node = overflow_atualizing_Node(new_node, info_block, info_block->ascended_id[1] + 1,
+             info_block->list_len);
+    
+    // CLEANING THE AUXILIARY STRUCTURES
+    
+    free(info_block->key_list);
+    free(info_block->rrn_list);
+    free(info_block);
+    info_block = NULL;
+    
+    // WRITING IN SECONDARY MEMORY
+    
+    // -> NODES :
+    int insertion_RRN;
+    int sister_RRN;
+    
+    if(sisterPage_direction == RIGHT){
+        insertion_RRN = father_node->descendants_RRN[id_father_key];
+        sister_RRN = father_node->descendants_RRN[id_father_key + 1];
+    }else{
+        sister_RRN = father_node->descendants_RRN[id_father_key];
+        insertion_RRN = father_node->descendants_RRN[id_father_key + 1];
+    }
+
+    fseek(index_file, (insertion_RRN + 1) * DISK_PAGE_SIZE, SEEK_SET);
+    bt_node_write(insertion_node, index_file);
+    
+    fseek(index_file, (sister_RRN + 1) * DISK_PAGE_SIZE, SEEK_SET);
+    bt_node_write(sister_node, index_file);
+    
+    fseek(index_file, (new_RRN + 1) * DISK_PAGE_SIZE, SEEK_SET);
+    bt_node_write(new_node, index_file);
+    
+    fseek(index_file, (father_RRN + 1) * DISK_PAGE_SIZE, SEEK_SET);
+    bt_node_write(father_node, index_file);
+    
+    
+    // -> HEADER
+    fseek(index_file, 0, SEEK_SET);
+    bt_header_write(tree->header, index_file);
+    
+    // LIBERATING THE ADRESSED MEMORY
+    bt_node_delete(&new_node); // was leaking but we thought it didnt need to be deleted, needs further analysis
+    bt_node_delete(&sister_node);
+    
+    return block;
 }

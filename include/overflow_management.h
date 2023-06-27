@@ -126,7 +126,7 @@ void node_split1_2(BT_node_t * root_node, BTree * tree, Insertion_block * block)
 BT_node_t * node_Split2_3_decision(BT_node_t * father_node, int overflowed_RRN_id,
      FILE * index_file, Path_running * direction, int * father_key_id);
 
-Insertion_block * node_split2_3(BT_node_t * father_node, BT_node_t * insertion_node,
+void node_split2_3(BT_node_t * father_node, BT_node_t * insertion_node,
      BT_node_t * sister_node, int id_father_key, Insertion_block * block,
      Path_running sisterPage_direction, BTree * tree, int father_RRN);
 

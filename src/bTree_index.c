@@ -93,9 +93,9 @@ void bTree_closing(BTree ** tree){
     
     BTree * t = *tree;
     
-    // now that the using of the btree in main memory is ended,
+    // now that the usage of the btree in main memory has ended,
     // we have to indicate that the index file in second memory
-    // is again valid;
+    // is valid;
     
     t->header->status = '1';
     fseek(t->index_file, 0, SEEK_SET);
@@ -108,7 +108,7 @@ BTree * bt_index_create(FILE * index_file) {
     BTree * tree = b_tree_create();
     tree->index_file = index_file;
 
-    tree->root = bt_node_create();
+    tree->root = NULL;
     tree->header = bt_header_create();
     tree->header->root_RRN = -1;
     tree->header->prox_RRN = 0;
@@ -163,8 +163,8 @@ BT_node_t * bt_node_read(FILE * src, int value_RRN){
 BTree * bTree_initializing(FILE * index_file){
     
     // while the tree is manipulated in main memory, we have to
-    // indicate the inconsistency of the information in stored
-    // second memory at the file.
+    // indicate the inconsistency of the information stored in
+    // second memory.
     
     BTree * tree = b_tree_create();
     tree->header = bt_header_read(index_file);
@@ -184,7 +184,7 @@ BTree * bTree_initializing(FILE * index_file){
     return tree;
 }
 
-void print_node(BT_node_t * node){
+void print_node(BT_node_t * node){ //debugging function
     printf("NO:\n");
     
     printf("RATE: %d\n", node->occupancy_rate);
@@ -284,6 +284,9 @@ int key_binary_search(BT_key * list, int inicial_id, int final_id, int filter_va
    
 }
 
+// Auxiliar function to the tree recursive key search. Responsible for searching the key
+// inside the note and returning the key it found and the rrn value of the next node the search should 
+// be performed in. Those values are stored in the branching_value structure
 Branching_value bTree_branching_through_node(BT_node_t * node, int filter_value, bool * find_flag,
      int * last_key_id){
     
@@ -320,7 +323,8 @@ Branching_value bTree_branching_through_node(BT_node_t * node, int filter_value,
     return result;
 }
 
-
+// Recursive tree id search function, returns te byteOffset of the key being searched for,
+// or -1 if the key is not in the tree
 long long int bTree_id_search(FILE * index_file, BT_node_t * node, int filter_value){
     
     long long int info;
@@ -368,6 +372,9 @@ long long int bTree_id_search(FILE * index_file, BT_node_t * node, int filter_va
  *  --> redistribuition
  *  --> split 1 - 2
  *  --> split 2 - 3
+ * 
+ *  the three overflow cases are identified by the overflow_treatment procedure and performed using the 
+ *  methods declared by the overflow_management ATD
  */
 
 //
@@ -413,7 +420,7 @@ void key_sorted_insertion(BT_node_t * node, Insertion_block * block, FILE * inde
     block->key.value = -1;
 }
 
-Insertion_block * overflow_treatment( BTree * tree, BT_node_t * father_node,
+void overflow_treatment( BTree * tree, BT_node_t * father_node,
      BT_node_t * overflowed_node, int father_RRN, int id_father_key,
      Insertion_block * insert_info){
     
@@ -447,13 +454,11 @@ Insertion_block * overflow_treatment( BTree * tree, BT_node_t * father_node,
             // the second ascended key with the RRN pointer to the new node
             // allocated, ir order to insert the block in the father node;
             
-            insert_info = node_split2_3(father_node, overflowed_node, sister_node,
+            node_split2_3(father_node, overflowed_node, sister_node,
                  id_father_key, insert_info, sister_direction, tree, father_RRN);
             
         }
     }
-    
-    return insert_info;
 }
 
 void bTree_insertion_in_node(BTree * tree, BT_node_t * current_node, BT_node_t * father_node,
@@ -473,13 +478,15 @@ void bTree_insertion_in_node(BTree * tree, BT_node_t * current_node, BT_node_t *
             
         }else{
             // there is no space left in the current node, so we have to execute a overflow treatment method
-            insertion_info = overflow_treatment(tree, father_node, current_node, father_RRN,
+            overflow_treatment(tree, father_node, current_node, father_RRN,
                 id_father_key, insertion_info);
         }
     }
 }
     
-
+// Recursive insert into tre function. Responsible for searching for the correct node that the key
+// must be inserted into and calling the procedure to insert the key into the found node.
+// Returns if the key could be inserted and the insertion into node function was called
 bool bTree_recursion_insertion(BTree * tree, BT_node_t * current_node, int current_RRN,
     BT_node_t * last_node, int last_node_RRN, int last_key_id, Insertion_block * block){
     
@@ -536,13 +543,20 @@ bool bTree_recursion_insertion(BTree * tree, BT_node_t * current_node, int curre
     }
 }
 
+// auxiliar function to the recursive insertion. Gets the key and the tree that the key will be inserted into and
+// sets up the insertion block structure using the parameters. If the tree is being created, it sets up the root node
+// for the key to be inserted into.
+// Returns if the insertion was successful
 bool bTree_id_insertion(BTree * tree, BT_key key) {
+    
+    //insertion block creation
     Insertion_block block;
-
     block.key = key;
     block.right_RRN = -1;
     
+    // root creation
     if(tree->header->root_RRN == -1) {
+        tree->root = bt_node_create();
         tree->header->root_RRN += 1;
         tree->header->prox_RRN += 1;
         tree->header->height += 1;

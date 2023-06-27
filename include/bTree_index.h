@@ -79,22 +79,30 @@ typedef enum path_running{
 // -----------------------------------
 // -----------------------------------
 
+// allocates the memory used by the BTree structure
 BTree * b_tree_create(void);
 
+// allocates the memory used by the BT header structure and fills it's fields with the corresponding
+// NULL/empty values
 BT_header_t * bt_header_create(void);
 
+// allocates the memory used by a BT node structure and fills it's fields with the corresponding
+// NULL/empty values
 BT_node_t * bt_node_create(void);
 
+// Frees the memory used by the BT node passed
 void bt_node_delete(BT_node_t ** node);
 
+// Frees the memory used by the BT header passed
 void bt_header_delete(BT_header_t ** header);
 
+// higher abstraction procedure used for setting up the binary tree on a newly created index file
 BTree * bt_index_create(FILE * index_file);
 
 /**
  * Frees the memory associated to the tree pointer correctly and sets the header status to valid again in second
  * memory. It's valid to remember that the file stored in the registry is not closed by this function, that task is not in the
- * scope of the bTree TAD in our implementation.
+ * scope of the bTree ATD in our implementation.
  */
 void bTree_closing(BTree ** tree);
 
@@ -114,10 +122,14 @@ void bTree_closing(BTree ** tree);
  * opening or closing them.
  */
 
+// reads the next data from the buffer file as a BT_header. It returns the allocated header pointer
 BT_header_t * bt_header_read(FILE * src);
 
+// reads the next data from the buffer file as a BT node. It returns the allocated node pointer
 BT_node_t * bt_node_read(FILE * src, int value_RNN);
 
+// initializes the BTree, BT Header and the root node as a BT node using the data from the index_file.
+// The file pointer must be set at the start of the index file
 BTree * bTree_initializing(FILE * index_file);
 
 // -----------------------------------
@@ -132,8 +144,10 @@ BTree * bTree_initializing(FILE * index_file);
  * position in the index file by itself before calling them.
  */
 
+// writes the passed BT header into the file position set by the passed file pointer
 void bt_header_write(BT_header_t * h, FILE * src);
 
+// writes the passed BT node into the file position set by the passed file pointer
 void bt_node_write(BT_node_t * node, FILE * src);
 
 // -----------------------------------
@@ -144,10 +158,11 @@ void bt_node_write(BT_node_t * node, FILE * src);
 
 /**
  * Returns the integer value associated to the field represented by the string passed.
- * In that way, with this function, we are able to verify what field was indexed in the input files.
+ * This way, with this function, we are able to verify what field was indexed in the input files.
  */
 int index_crimeField_pairing(char str[]);
 
+// used for printing the passed node in a organized way for debugging  
 void print_node(BT_node_t * node);
 
 // -----------------------------------
@@ -179,22 +194,20 @@ int key_binary_search(BT_key * list, int inicial_id, int final_id, int filter_va
 // -----------------------------------
 // -----------------------------------
 
-/* REVISAR ESSE COMENTARIO!!!!!!!
- * The next functions assume that the inserted information is a Key and a
+/* 
+ * The next function assumes that the inserted information is a Key and a
  * RRN pointer, that can maybe be valid, in the case of an propagated information
  * by the split2-3.
- *
- * The next functions receives the parameters nodes already read in main memory,
- * and can read at most more 3 nodes in its implamentation.
  *
  * In the end of the overflow procedures, the functions writes in the index file
  * the nodes that have been changed and frees the memory alocated except for the
  * father node. For him, the memory freeing has to be done in the insertion recursion.
  *
- *
- *
+ * this function is auxiliar to the encapsulated recursive insertion. 
+ * it gets the key and the tree that the key will be inserted into and sets up the insertion block structure using 
+ * the parameters. If the tree is being created, it sets up the root node for the key to be inserted into.
+ * Returns if the insertion was successful
  */
-
 bool bTree_id_insertion(BTree * tree, BT_key key);
 
 #endif /* bTree_index_h */

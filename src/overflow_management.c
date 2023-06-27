@@ -509,7 +509,7 @@ BT_node_t * node_Split2_3_decision(BT_node_t * father_node, int overflowed_RRN_i
     }
 }
 
-Insertion_block * node_split2_3(BT_node_t * father_node, BT_node_t * insertion_node,
+void node_split2_3(BT_node_t * father_node, BT_node_t * insertion_node,
      BT_node_t * sister_node, int id_father_key, Insertion_block * block,
      Path_running sisterPage_direction, BTree * tree, int father_RRN){
     
@@ -607,6 +607,4 @@ Insertion_block * node_split2_3(BT_node_t * father_node, BT_node_t * insertion_n
     // LIBERATING THE ADRESSED MEMORY
     bt_node_delete(&new_node); // was leaking but we thought it didnt need to be deleted, needs further analysis
     bt_node_delete(&sister_node);
-    
-    return block;
 }

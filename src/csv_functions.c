@@ -64,6 +64,52 @@ void data_file_settingHeader(FILE * data_file, char status, Header_t * header){
 //--------------------------------------------------
 //--------------------------------------------------
 
+void create_index(FILE * data_file, FILE * index_file, char * index_name, Header_t * data_header) {
+
+    // binary tree index setup
+    BTree * tree = bt_index_create(index_file);
+
+    // Checking the indexed value
+    if(index_crimeField_pairing(index_name) != INDEX_IDENTIFIER){
+        fprintf(stdout, "The indexed value isn't the primary key -> NOT POSSIBLE TO INSERT INTO THE INDEX TREE\n");
+        return;
+    }
+
+    // creating the auxiliary crime variables used to store and insert the crime from the database
+    Crime_t * inserted_crime = crime_create();
+
+    // setting the byteOffset to the first crime on the database
+    long long int current_byteOffset = 17; // header size
+
+    // insertion loop, assumes every crime has the indexed value idCrime
+    long long int inserted_crime_size;
+    for(int i = 1; i <= data_header->nRegFile; ++i) {
+
+        printf("CRIME %d\n", i);
+        inserted_crime_size = crime_reading(data_file, inserted_crime);
+
+        crime_printing(inserted_crime);
+
+        if(inserted_crime->removed == 1) { 
+            // if it was removed, it must not be inserted into the index file
+            crime_liberate_dynamic_strings(&inserted_crime);
+            current_byteOffset += inserted_crime_size;
+            continue;
+        }
+        
+        // insertion into the binary_tree
+        BT_key inserted_key;
+        inserted_key.value = inserted_crime->idCrime;
+        inserted_key.byteOffset = current_byteOffset;
+        bTree_id_insertion(tree, inserted_key);
+
+        crime_liberate_dynamic_strings(&inserted_crime);
+        current_byteOffset += inserted_crime_size;
+    }
+    
+    crime_delete(&inserted_crime);
+    bTree_closing(&tree);
+}
 
 // -------------------------------------------------
 // -------------------------------------------------
@@ -164,6 +210,7 @@ void insert_into(FILE * data_file, FILE * index_file, char * index_name, int n_e
     // Checking the indexed value
     if(index_crimeField_pairing(index_name) != INDEX_IDENTIFIER){
         fprintf(stdout, "The indexed value isn't the primary key -> NOT POSSIBLE TO INSERT INTO THE INDEX TREE\n");
+        bTree_closing(&tree);
         return;
     }
 
@@ -172,6 +219,7 @@ void insert_into(FILE * data_file, FILE * index_file, char * index_name, int n_e
     bool index_flag; //used to determine if the inserted crime has information on the indexed field
     char index_info[BUFSIZ];
 
+    // since its an insertion, the only possibility is writing at the end of the data_file
     fseek(data_file, data_header->proxByteOffset, SEEK_SET);
     
     for(int i = 1; i <= n_executions; ++i){

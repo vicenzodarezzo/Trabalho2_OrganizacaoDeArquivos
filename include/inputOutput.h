@@ -3,6 +3,9 @@
 #ifndef inputOutput_h
 #define inputOutput_h
 
+#include <stdio.h>
+#include <stdlib.h>
+
 # include <stdbool.h>
 # include <ctype.h>
 

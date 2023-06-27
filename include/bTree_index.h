@@ -7,6 +7,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+# include <stdbool.h>
+# include <ctype.h>
+
 #include "registers.h"
 
 
@@ -76,9 +79,17 @@ typedef enum path_running{
 // -----------------------------------
 // -----------------------------------
 
+BTree * b_tree_create(void);
+
+BT_header_t * bt_header_create(void);
+
+BT_node_t * bt_node_create(void);
+
 void bt_node_delete(BT_node_t ** node);
 
 void bt_header_delete(BT_header_t ** header);
+
+BTree * bt_index_create(FILE * index_file);
 
 /**
  * Frees the memory associated to the tree pointer correctly and sets the header status to valid again in second
@@ -184,6 +195,6 @@ int key_binary_search(BT_key * list, int inicial_id, int final_id, int filter_va
  *
  */
 
-int bTree_id_insertion(BTree * tree, BT_key key);
+bool bTree_id_insertion(BTree * tree, BT_key key);
 
 #endif /* bTree_index_h */

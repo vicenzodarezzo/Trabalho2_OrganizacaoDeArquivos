@@ -150,6 +150,7 @@ Overflow_block * create_oveflowBlock_3Nodes(BT_key father_key, BT_node_t * inser
     info_block->rrn_list = (int *) malloc(sizeof(int) * (info_block->list_len+1));
     assert(info_block->rrn_list);
     
+    
     // Associting information in the overflow registry according to the sourcepages order
     if(sister_direction == RIGHT){
         
@@ -257,22 +258,25 @@ Overflow_block * create_oveflowBlock_1Node(BT_node_t * insertion_node, Insertion
  */
 
 BT_node_t * key_redistribuition_decision(BT_node_t * father_node, int overflowed_RRN_id,
-     FILE * index_file, Path_running * direction){
+     FILE * index_file, Path_running * direction, int * father_key_id){
     
     BT_node_t * node_buffer_left = NULL;
     BT_node_t * node_buffer_right = NULL;
-    int sister_rrn_id = 0;
+    int left_sister_rrn_id = 0;
+    int right_sister_rrn_id = 0;
 
     // testing if the insertion position is one of the list limits case :
     if(overflowed_RRN_id != 0){
-        sister_rrn_id = overflowed_RRN_id - 1;
-        if(sister_rrn_id >= 0){
-            node_buffer_left = bt_node_read(index_file, father_node->descendants_RRN[sister_rrn_id]);
+        left_sister_rrn_id = overflowed_RRN_id - 1;
+        if(left_sister_rrn_id >= 0){
+            node_buffer_left = bt_node_read(index_file,
+                 father_node->descendants_RRN[left_sister_rrn_id]);
         }
     }if(overflowed_RRN_id != father_node->occupancy_rate){
-        sister_rrn_id = overflowed_RRN_id + 1;
-        if(sister_rrn_id >= 0){
-            node_buffer_right = bt_node_read(index_file, father_node->descendants_RRN[sister_rrn_id]);
+        right_sister_rrn_id = overflowed_RRN_id + 1;
+        if(right_sister_rrn_id >= 0){
+            node_buffer_right = bt_node_read(index_file,
+             father_node->descendants_RRN[right_sister_rrn_id]);
         }
     }
     
@@ -283,12 +287,21 @@ BT_node_t * key_redistribuition_decision(BT_node_t * father_node, int overflowed
         //printf("\nESCOLHEU IRMA DA ESQUERDA - RRN : %d\n", father_node->descendants_RRN[sister_rrn_id]);
         if(node_buffer_right != NULL) bt_node_delete(&node_buffer_right);
         *direction = LEFT;
+        
+        // checking if we have to change the father_id :
+        if(left_sister_rrn_id < *father_key_id){
+            *father_key_id = *father_key_id - 1 ;
+        }
         return node_buffer_left;
         
     }else if(node_buffer_right != NULL && node_buffer_right->occupancy_rate < TREE_ORDER - 1){
         //printf("\nESCOLHEU IRMA DA DIREITA - RRN : %d\n", father_node->descendants_RRN[sister_rrn_id]);
         if(node_buffer_left != NULL) bt_node_delete(&node_buffer_left);
         *direction = RIGHT;
+        // checking if we have to change the father_id :
+        if(right_sister_rrn_id > *father_key_id + 1){
+            *father_key_id = *father_key_id + 1 ;
+        }
         return node_buffer_right;
         
     }else{
@@ -306,22 +319,23 @@ BT_node_t * key_redistribuition_decision(BT_node_t * father_node, int overflowed
 // ------------------------------
 
 BT_node_t * node_Split2_3_decision(BT_node_t * father_node, int overflowed_RRN_id,
-     FILE * index_file, Path_running * direction){
+     FILE * index_file, Path_running * direction, int * father_key_id){
     
     BT_node_t * node_buffer_left = NULL;
     BT_node_t * node_buffer_right = NULL;
-    int sister_rrn_id = 0;
+    int left_sister_rrn_id = 0;
+    int right_sister_rrn_id = 0;
 
     // testing if the insertion position is one of the list limits case :
     if(overflowed_RRN_id != 0){
-        sister_rrn_id = overflowed_RRN_id - 1;
-        if(sister_rrn_id >= 0){
-            node_buffer_left = bt_node_read(index_file, father_node->descendants_RRN[sister_rrn_id]);
+        left_sister_rrn_id = overflowed_RRN_id - 1;
+        if(left_sister_rrn_id >= 0){
+            node_buffer_left = bt_node_read(index_file, father_node->descendants_RRN[left_sister_rrn_id]);
         }
     }if(overflowed_RRN_id != father_node->occupancy_rate){
-        sister_rrn_id = overflowed_RRN_id + 1;
-        if(sister_rrn_id >= 0){
-            node_buffer_right = bt_node_read(index_file, father_node->descendants_RRN[sister_rrn_id]);
+        right_sister_rrn_id = overflowed_RRN_id + 1;
+        if(right_sister_rrn_id >= 0){
+            node_buffer_right = bt_node_read(index_file, father_node->descendants_RRN[right_sister_rrn_id]);
         }
     }
     
@@ -331,12 +345,23 @@ BT_node_t * node_Split2_3_decision(BT_node_t * father_node, int overflowed_RRN_i
         //printf("\nESCOLHEU IRMA DA direita - RRN : %d\n", father_node->descendants_RRN[sister_rrn_id]);
         if(node_buffer_left != NULL) bt_node_delete(&node_buffer_left);
         *direction = RIGHT;
+        
+        // checking if we have to change the father_id :
+        if(right_sister_rrn_id > *father_key_id + 1){
+            *father_key_id = *father_key_id + 1 ;
+        }
         return node_buffer_right;
         
     }else if(node_buffer_left != NULL){
         //printf("\nESCOLHEU IRMA DA esquerda - RRN : %d\n", father_node->descendants_RRN[sister_rrn_id]);
         if(node_buffer_right != NULL) bt_node_delete(&node_buffer_right);
         *direction = LEFT;
+        
+        // checking if we have to change the father_id :
+        if(left_sister_rrn_id < *father_key_id){
+            *father_key_id = *father_key_id - 1 ;
+        }
+        
         return node_buffer_left;
             
     }else{

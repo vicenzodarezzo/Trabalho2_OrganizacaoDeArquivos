@@ -9,6 +9,7 @@
 #define overflow_management_h
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "bTree_index.h"
 
 typedef struct overflow_lists{
@@ -22,6 +23,8 @@ typedef struct overflow_lists{
 typedef struct inserted_block{
     BT_key key;
     int right_RRN;
+    bool fatherKey_id_change;
+    int new_father_key_id;
 }Insertion_block;
 
 typedef enum list_type{
@@ -96,7 +99,7 @@ Overflow_block * create_oveflowBlock_1Node(BT_node_t * insertion_node, Insertion
 * If it isn't a case of redistribuition, the function will return a NULL value.
 */
 BT_node_t * key_redistribuition_decision(BT_node_t * father_node, int overflowed_RRN_id,
-     FILE * index_file, Path_running * direction);
+     FILE * index_file, Path_running * direction, int * father_key_id);
 
 
 // ------------------------------
@@ -109,7 +112,7 @@ BT_node_t * key_redistribuition_decision(BT_node_t * father_node, int overflowed
 * and storing its relative position in the Path_running adress (direction) passed as a parameter.
 */
 BT_node_t * node_Split2_3_decision(BT_node_t * father_node, int overflowed_RRN_id,
-                                   FILE * index_file, Path_running * direction);
+     FILE * index_file, Path_running * direction, int * father_key_id);
 
 
 

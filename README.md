@@ -1,5 +1,5 @@
-# Trabalho2_OrganizacaoDeArquivos
-Repositório privado para o controle do versionamento da implementação do trabalho 2 da disciplina SCC0215 - Organização de Arquivos.
+# Indexação de dados por Árvore B* virutal - Trabalho2_OrganizacaoDeArquivos
+Repositório privado para o controle do versionamento da implementação do trabalho 2 da disciplina SCC0215 - Organização de Arquivos, ministrada no primeiro semestre de 2023 pela professora Cristina Dutra de Aguiar, na USP - São Carlos. Todos os códigos aqui depositados foram feitos por Vicenzo D`Arezzo Zilio e João Gabriel Nazar.
 
 ## Objetivos
 O objetivo principal é ser capaz de implementar um sistema que lida com dados presentes em arquivos binários, simulando as funcionalidades implementadas na linguagem SQL, como inserção, busca, remoção, entre outras...
